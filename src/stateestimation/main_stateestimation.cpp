@@ -1,4 +1,4 @@
- /**
+/**
  *  This file is part of tum_ardrone.
  *
  *  Copyright 2012 Jakob Engel <jajuengel@gmail.com> (Technical University of Munich)
@@ -17,7 +17,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with tum_ardrone.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 //#include "EstimationNode.h"
 #include "ros/ros.h"
 //#include "PTAMWrapper.h"
@@ -30,24 +30,24 @@ unsigned int ros_header_timestamp_base = 0;
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "drone_stateestimation");
+	ros::init(argc, argv, "drone_stateestimation");
 
-  ROS_INFO("Started TUM ArDrone Stateestimation Node.");
+	ROS_INFO("Started TUM ArDrone Stateestimation Node.");
 
-  //EstimationNode estimator;
+	//EstimationNode estimator;
 
-  //dynamic_reconfigure::Server<tum_ardrone::StateestimationParamsConfig> srv;
-  //dynamic_reconfigure::Server<tum_ardrone::StateestimationParamsConfig>::CallbackType f;
-  //f = boost::bind(&EstimationNode::dynConfCb, &estimator, _1, _2);
-  //srv.setCallback(f);
+	//dynamic_reconfigure::Server<tum_ardrone::StateestimationParamsConfig> srv;
+	//dynamic_reconfigure::Server<tum_ardrone::StateestimationParamsConfig>::CallbackType f;
+	//f = boost::bind(&EstimationNode::dynConfCb, &estimator, _1, _2);
+	//srv.setCallback(f);
 
-  //estimator.ptamWrapper->startSystem();
-  //estimator.mapView->startSystem();
+	//estimator.ptamWrapper->startSystem();
+	//estimator.mapView->startSystem();
 
-  //estimator.Loop();
+	//estimator.Loop();
 
-  //estimator.mapView->stopSystem();
-  //estimator.ptamWrapper->stopSystem();
+	//estimator.mapView->stopSystem();
+	//estimator.ptamWrapper->stopSystem();
 
-  return 0;
+	return 0;
 }

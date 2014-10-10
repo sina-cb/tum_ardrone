@@ -1,5 +1,5 @@
 #pragma once
- /**
+/**
  *  This file is part of tum_ardrone.
  *
  *  Copyright 2012 Jakob Engel <jajuengel@gmail.com> (Technical University of Munich)
@@ -20,7 +20,7 @@
  */
 #ifndef __MAPVIEW_H
 #define __MAPVIEW_H
- 
+
 #include "GLWindow2.h"
 #include <deque>
 #include "cvd/thread.h"
