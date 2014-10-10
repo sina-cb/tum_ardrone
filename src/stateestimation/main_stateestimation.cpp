@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "drone_stateestimation");
 
-	ROS_INFO("Started TUM ArDrone Stateestimation Node.");
+	ROS_ERROR("Started TUM ArDrone Stateestimation Node.");
 
 	//EstimationNode estimator;
 
