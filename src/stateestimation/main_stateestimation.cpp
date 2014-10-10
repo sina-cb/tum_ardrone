@@ -18,10 +18,10 @@
  *  along with tum_ardrone.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#include "EstimationNode.h"
+//#include "EstimationNode.h"
 #include "ros/ros.h"
-#include "PTAMWrapper.h"
-#include "MapView.h"
+//#include "PTAMWrapper.h"
+//#include "MapView.h"
 
 // this global var is used in getMS(ros::Time t) to convert to a consistent integer timestamp used internally pretty much everywhere.
 // kind of an artifact from Windows-Version, where only that was available / used.
@@ -34,20 +34,22 @@ int main(int argc, char **argv)
 
   ROS_INFO("Started TUM ArDrone Stateestimation Node.");
 
-  EstimationNode estimator;
+  ROS_ERROR("\n\n\nHELLO\n\n\n");
 
-  dynamic_reconfigure::Server<tum_ardrone::StateestimationParamsConfig> srv;
-  dynamic_reconfigure::Server<tum_ardrone::StateestimationParamsConfig>::CallbackType f;
-  f = boost::bind(&EstimationNode::dynConfCb, &estimator, _1, _2);
-  srv.setCallback(f);
+  //EstimationNode estimator;
 
-  estimator.ptamWrapper->startSystem();
-  estimator.mapView->startSystem();
+  //dynamic_reconfigure::Server<tum_ardrone::StateestimationParamsConfig> srv;
+  //dynamic_reconfigure::Server<tum_ardrone::StateestimationParamsConfig>::CallbackType f;
+  //f = boost::bind(&EstimationNode::dynConfCb, &estimator, _1, _2);
+  //srv.setCallback(f);
 
-  estimator.Loop();
+  //estimator.ptamWrapper->startSystem();
+  //estimator.mapView->startSystem();
 
-  estimator.mapView->stopSystem();
-  estimator.ptamWrapper->stopSystem();
+  //estimator.Loop();
+
+  //estimator.mapView->stopSystem();
+  //estimator.ptamWrapper->stopSystem();
 
   return 0;
 }
