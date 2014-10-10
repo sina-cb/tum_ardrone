@@ -22,7 +22,8 @@
 #include <string>
 
 EstimationNode::EstimationNode(){
-
+	
+	ROS_FATAL("HELLO");
 
 }
 
