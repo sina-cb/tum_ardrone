@@ -92,6 +92,13 @@ set(STATEESTIMATION_SOURCE_FILES
   src/stateestimation/PTAM/ShiTomasi.cc
   src/stateestimation/PTAM/SmallBlurryImage.cc
   src/stateestimation/PTAM/Tracker.cc
+  src/stateestimation/PTAM/MapLockManager.cc
+  src/stateestimation/PTAM/tinyxml.cc
+  src/stateestimation/PTAM/tinyxmlerror.cc
+  src/stateestimation/PTAM/tinyxmlparser.cc
+  src/stateestimation/PTAM/Utils.cc
+  src/stateestimation/PTAM/MD5.cc
+  src/stateestimation/PTAM/MD5Wrapper.cc
 )
 set(STATEESTIMATION_HEADER_FILES    
   src/stateestimation/GLWindow2.h 
@@ -124,6 +131,11 @@ set(STATEESTIMATION_HEADER_FILES
   src/stateestimation/PTAM/TrackerData.h
   src/stateestimation/PTAM/Tracker.h
   src/stateestimation/PTAM/VideoSource.h
+  src/stateestimation/PTAM/MapLockManager.h
+  src/stateestimation/PTAM/tinyxml.h
+  src/stateestimation/PTAM/Utils.h
+  src/stateestimation/PTAM/MD5.h
+  src/stateestimation/PTAM/MD5Wrapper.h
 )
 
 # set required libs and headers
