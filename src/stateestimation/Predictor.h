@@ -27,8 +27,6 @@
 #include <string>
 #include <ardrone_autonomy/Navdata.h>
 
-using namespace PTAMM;
-
 // handles the drone's coordinate frames.
 // drone: coordinate system of drone. at zero equals global CS
 //		  positive z: "up"
