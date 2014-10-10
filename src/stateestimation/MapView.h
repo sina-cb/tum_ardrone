@@ -27,7 +27,6 @@
 #include "TooN/se3.h"
 #include "MouseKeyHandler.h"
 
-
 class DroneKalmanFilter;
 class PTAMWrapper;
 class Predictor;
