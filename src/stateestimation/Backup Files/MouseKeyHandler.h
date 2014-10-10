@@ -1,5 +1,5 @@
 #pragma once
-/**
+ /**
  *  This file is part of tum_ardrone.
  *
  *  Copyright 2012 Jakob Engel <jajuengel@gmail.com> (Technical University of Munich)
@@ -18,15 +18,22 @@
  *  You should have received a copy of the GNU General Public License
  *  along with tum_ardrone.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __ESTIMATIONNODE_H
-#define __ESTIMATIONNODE_H
+#ifndef __MOUSEKEYHANDLER_H
+#define __MOUSEKEYHANDLER_H
+ 
+ 
+#pragma once
+#include "cvd/image.h"
 
-class EstimationNode{
-
+class MouseKeyHandler
+{
 public:
-	int data;
-
-	EstimationNode();
-
+	// default constructors
+	inline MouseKeyHandler() {};
+	inline ~MouseKeyHandler(void) {};
+	virtual inline void on_key_down(int key) {};
+	virtual inline void on_mouse_move(CVD::ImageRef where, int state) {};
+	virtual inline void on_mouse_down(CVD::ImageRef where, int state, int button) {};
+	virtual inline void on_event(int event) {};
 };
-#endif /* __ESTIMATIONNODE_H */
+#endif /* __MOUSEKEYHANDLER_H */
