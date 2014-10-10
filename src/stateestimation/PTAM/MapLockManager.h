@@ -7,7 +7,7 @@
 
   Author: Robert Castle, 2008, bob@robots.ox.ac.uk
 
-********************************************************************/
+ ********************************************************************/
 
 #ifndef __MAP_LOCK_MANAGER__
 #define __MAP_LOCK_MANAGER__
@@ -26,22 +26,22 @@ namespace PTAMM {
  */
 class MapLockManager
 {
-  public:
-    MapLockManager() : mLockingThread(NULL), mbLocked(false)  {}
-    ~MapLockManager() {}
+public:
+	MapLockManager() : mLockingThread(NULL), mbLocked(false)  {}
+	~MapLockManager() {}
 
-    void Register( void * t );                   // call when switching to a map
-    void UnRegister( void * t);                  // call when leaving a map
-    bool IsRegistered( void * t);                // check if thread is registered
-    bool IsLocked() { return mbLocked; }                  // check if map is locked
-    bool CheckLockAndWait( void * t, int nTimeout = 0);   // if locked wait for release
-    bool LockMap( void * t, int nTimeout = 0 );  // lock a map. waits until all thread ack
-    bool UnlockMap( void * t);                   // unlock a map. only if thread is the owner
+	void Register( void * t );                   // call when switching to a map
+	void UnRegister( void * t);                  // call when leaving a map
+	bool IsRegistered( void * t);                // check if thread is registered
+	bool IsLocked() { return mbLocked; }                  // check if map is locked
+	bool CheckLockAndWait( void * t, int nTimeout = 0);   // if locked wait for release
+	bool LockMap( void * t, int nTimeout = 0 );  // lock a map. waits until all thread ack
+	bool UnlockMap( void * t);                   // unlock a map. only if thread is the owner
 
-  private:
-    std::map< void *, bool > mLockRecords;       // which threads are currently using this map
-    void * mLockingThread;                       // who want to lock / has locked the thread
-    bool mbLocked;                               // is the map locked
+private:
+	std::map< void *, bool > mLockRecords;       // which threads are currently using this map
+	void * mLockingThread;                       // who want to lock / has locked the thread
+	bool mbLocked;                               // is the map locked
 
 };
 

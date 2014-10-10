@@ -6,7 +6,7 @@
   A set of utility functions
   Author: Robert Castle, 2009, bob@robots.ox.ac.uk
 
-********************************************************************/
+ ********************************************************************/
 
 #include "Utils.h"
 
@@ -22,15 +22,15 @@ namespace PTAMM {
  */
 void PruneWhiteSpace(std::string & str)
 {
-  std::vector< std::string > tokens = GVars3::ChopAndUnquoteString(str);
-  std::ostringstream os;
-  os << tokens;
+	std::vector< std::string > tokens = GVars3::ChopAndUnquoteString(str);
+	std::ostringstream os;
+	os << tokens;
 
-  str = os.str();
+	str = os.str();
 
-  if(str.at( str.size() - 1 ) == ' ' ) {
-    str.erase(  str.end() - 1 );
-  }
+	if(str.at( str.size() - 1 ) == ' ' ) {
+		str.erase(  str.end() - 1 );
+	}
 }
 
 }

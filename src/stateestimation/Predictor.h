@@ -21,15 +21,13 @@
 #ifndef __PREDICTOR_H
 #define __PREDICTOR_H
  
- 
- 
- 
 #include "TooN/TooN.h"
 #include "TooN/so3.h"
 #include "TooN/se3.h"
 #include <string>
 #include <ardrone_autonomy/Navdata.h>
 
+using namespace PTAMM;
 
 // handles the drone's coordinate frames.
 // drone: coordinate system of drone. at zero equals global CS

@@ -18,17 +18,17 @@ class MD5;
 
 class MD5Wrapper
 {
-  public:
-     MD5Wrapper();
-    ~MD5Wrapper();
-  
-    bool getHashFromData(const unsigned char *byte, unsigned int nBytesToRead, std::string & sMD5Hash);
-    
-  private:
-    std::string convToString(unsigned char *bytes);
+public:
+	MD5Wrapper();
+	~MD5Wrapper();
 
-  private:
-    MD5 *mMD5;
+	bool getHashFromData(const unsigned char *byte, unsigned int nBytesToRead, std::string & sMD5Hash);
+
+private:
+	std::string convToString(unsigned char *bytes);
+
+private:
+	MD5 *mMD5;
 
 };
 

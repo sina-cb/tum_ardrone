@@ -17,7 +17,6 @@
 #include <gvars3/GStringUtil.h>
 #include "LevelHelpers.h"
 #include "MD5Wrapper.h"
-#include "Games.h"
 #include "Utils.h"
 
 #include <iostream>
@@ -274,7 +273,7 @@ MapSerializer::MapStatus MapSerializer::_LoadMap( std::string sDirName )
 	if( sGame != "None" )
 	{
 		string sGameDataFile = hRoot.FirstChild( "Game" ).Element()->Attribute("path");
-		mpMap->pGame = LoadAGame(sGame, sDirName + "/" + sGameDataFile);
+		/*mpMap->pGame = LoadAGame(sGame, sDirName + "/" + sGameDataFile);*/
 	}
 
 	//all loaded so set map as good.
@@ -552,7 +551,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 
 			if( (int)mpMap->vpKeyFrames.size() != nSize ) {
 				cerr << "Loaded the wrong number of keyframes. " << mpMap->vpKeyFrames.size()
-        		  << " instead of " << nSize << ". Aborting" << endl;
+        						  << " instead of " << nSize << ". Aborting" << endl;
 				return false;
 			}
 		}
@@ -577,7 +576,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 
 			if( (int)mpMap->vpKeyFrameQueue.size() != nSize ) {
 				cerr << "Loaded the wrong number of queue keyframes. " << mpMap->vpKeyFrameQueue.size()
-        		  << " instead of " << nSize << ". Aborting" << endl;
+        						  << " instead of " << nSize << ". Aborting" << endl;
 				return false;
 			}
 		}
@@ -788,7 +787,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 
 			if( (int)mpMap->vpPoints.size() != nSize ) {
 				cerr << "Loaded the wrong number of mappoints. " << mpMap->vpPoints.size()
-        		  << " instead of " << nSize << ". Aborting" << endl;
+        						  << " instead of " << nSize << ". Aborting" << endl;
 				return false;
 			}
 		}
@@ -812,7 +811,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 
 			if( (int)mpMap->qNewQueue.size() != nSize ) {
 				cerr << "Loaded the wrong number of new mappoints. " << mpMap->qNewQueue.size()
-        		  << " instead of " << nSize << ". Aborting" << endl;
+        						  << " instead of " << nSize << ". Aborting" << endl;
 				return false;
 			}
 		}
@@ -888,8 +887,9 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 		////////////  save the game data  ////////////
 		TiXmlElement * game = new TiXmlElement( "Game" );
 		rootNode->LinkEndChild( game );
+		game->SetAttribute("type", "None");
 
-		if( mpMap->pGame )
+		/*if( mpMap->pGame )
 		{
 			game->SetAttribute("type", mpMap->pGame->Name() );
 			string sFile = mpMap->pGame->Save( sPath );
@@ -900,7 +900,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 		}
 		else  {
 			game->SetAttribute("type", "None");
-		}
+		}*/
 
 		////////////  relase map lock  ////////////
 		_UnlockMap();

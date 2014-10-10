@@ -1,4 +1,4 @@
- /**
+/**
  *  This file is part of tum_ardrone.
  *
  *  Copyright 2012 Jakob Engel <jajuengel@gmail.com> (Technical University of Munich)
@@ -17,9 +17,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with tum_ardrone.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
- 
- 
 #include "PTAMWrapper.h"
 #include <cvd/gl_helpers.h>
 #include <gvars3/instances.h>
@@ -38,6 +35,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+using namespace PTAMM;
 
 pthread_mutex_t PTAMWrapper::navInfoQueueCS = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t PTAMWrapper::shallowMapCS = PTHREAD_MUTEX_INITIALIZER;
@@ -56,11 +54,11 @@ PTAMWrapper::PTAMWrapper(DroneKalmanFilter* f, EstimationNode* nde)
 	predIMUOnlyForScale = 0;
 	mpCamera = 0;
 	newImageAvailable = false;
-	
+
 	mapPointsTransformed = std::vector<tvec3>();
 	keyFramesTransformed = std::vector<tse3>();
 
-	
+
 	predConvert = new Predictor();
 	predIMUOnlyForScale = new Predictor();
 	imuOnlyPred = new Predictor();
@@ -200,7 +198,7 @@ void PTAMWrapper::run()
 	node->publishCommand(std::string("u l ")+charBuf);
 
 	// create window
-    myGLWindow = new GLWindow2(CVD::ImageRef(frameWidth,frameHeight), "PTAM Drone Camera Feed", this);
+	myGLWindow = new GLWindow2(CVD::ImageRef(frameWidth,frameHeight), "PTAM Drone Camera Feed", this);
 	myGLWindow->set_title("PTAM Drone Camera Feed");
 
 	changeSizeNextRender = true;
@@ -208,7 +206,6 @@ void PTAMWrapper::run()
 		desiredWindowSize = CVD::ImageRef(frameWidth*2,frameHeight*2);
 	else
 		desiredWindowSize = CVD::ImageRef(frameWidth,frameHeight);
-
 
 	boost::unique_lock<boost::mutex> lock(new_frame_signal_mutex);
 
@@ -358,17 +355,17 @@ void PTAMWrapper::HandleFrame()
 		isVeryGood = false;
 	}
 	else if(mpTracker->lastStepResult == mpTracker->I_FIRST ||
-		mpTracker->lastStepResult == mpTracker->I_SECOND || 
-		mpTracker->lastStepResult == mpTracker->I_FAILED ||
-		mpTracker->lastStepResult == mpTracker->T_LOST ||
-		mpTracker->lastStepResult == mpTracker->NOT_TRACKING ||
-		mpTracker->lastStepResult == mpTracker->INITIALIZING)
+			mpTracker->lastStepResult == mpTracker->I_SECOND ||
+			mpTracker->lastStepResult == mpTracker->I_FAILED ||
+			mpTracker->lastStepResult == mpTracker->T_LOST ||
+			mpTracker->lastStepResult == mpTracker->NOT_TRACKING ||
+			mpTracker->lastStepResult == mpTracker->INITIALIZING)
 		isGood = isVeryGood = false;
 	else
 	{
 		// some chewy heuristic when to add and when not to.
 		bool dodgy = mpTracker->lastStepResult == mpTracker->T_DODGY ||
-			mpTracker->lastStepResult == mpTracker->T_RECOVERED_DODGY;
+				mpTracker->lastStepResult == mpTracker->T_RECOVERED_DODGY;
 
 		// if yaw difference too big: something certainly is wrong.
 		// maximum difference is 5 + 2*(number of seconds since PTAM observation).
@@ -400,7 +397,7 @@ void PTAMWrapper::HandleFrame()
 	{
 		if(isGoodCount > 0) isGoodCount = 0;
 		isGoodCount--;
-		
+
 		if(mpTracker->lastStepResult == mpTracker->T_RECOVERED_DODGY)
 			isGoodCount = std::max(isGoodCount,-2);
 		if(mpTracker->lastStepResult == mpTracker->T_RECOVERED_GOOD)
@@ -459,10 +456,10 @@ void PTAMWrapper::HandleFrame()
 			pthread_mutex_lock(&logScalePairs_CS);
 			if(logfileScalePairs != 0)
 				(*logfileScalePairs) <<
-						pressureStart << " " <<
-						pressureEnd << " " <<
-						diffIMU[2] << " " <<
-						diffPTAM[2] << std::endl;
+				pressureStart << " " <<
+				pressureEnd << " " <<
+				diffIMU[2] << " " <<
+				diffPTAM[2] << std::endl;
 			pthread_mutex_unlock(&logScalePairs_CS);
 
 
@@ -471,7 +468,7 @@ void PTAMWrapper::HandleFrame()
 				// filtering: z more weight, but only if not corrupted.
 				double xyFactor = 0.05;
 				double zFactor = zCorrupted ? 0 : 3;
-			
+
 				diffPTAM.slice<0,2>() *= xyFactor; diffPTAM[2] *= zFactor;
 				diffIMU.slice<0,2>() *= xyFactor; diffIMU[2] *= zFactor;
 
@@ -489,7 +486,7 @@ void PTAMWrapper::HandleFrame()
 			ptamPositionForScaleTakenTimestamp = mimFrameTime_workingCopy;
 		}
 	}
-	
+
 
 	if(lockNextFrame && isGood)
 	{
@@ -514,8 +511,8 @@ void PTAMWrapper::HandleFrame()
 	if(mpTracker->lastStepResult == mpTracker->NOT_TRACKING)
 		PTAMStatus = PTAM_IDLE;
 	else if(mpTracker->lastStepResult == mpTracker->I_FIRST ||
-		mpTracker->lastStepResult == mpTracker->I_SECOND ||
-		mpTracker->lastStepResult == mpTracker->T_TOOK_KF)
+			mpTracker->lastStepResult == mpTracker->I_SECOND ||
+			mpTracker->lastStepResult == mpTracker->T_TOOK_KF)
 		PTAMStatus = PTAM_TOOKKF;
 	else if(mpTracker->lastStepResult == mpTracker->INITIALIZING)
 		PTAMStatus = PTAM_INITIALIZING;
@@ -524,12 +521,12 @@ void PTAMWrapper::HandleFrame()
 	else if(isGood)
 		PTAMStatus = PTAM_GOOD;
 	else if(mpTracker->lastStepResult == mpTracker->T_DODGY ||
-		mpTracker->lastStepResult == mpTracker->T_GOOD)
+			mpTracker->lastStepResult == mpTracker->T_GOOD)
 		PTAMStatus = PTAM_FALSEPOSITIVE;
 	else
 		PTAMStatus = PTAM_LOST;
 
-	 
+
 	// ----------------------------- update shallow map --------------------------
 	if(!mapLocked && rand()%5==0)
 	{
@@ -565,8 +562,8 @@ void PTAMWrapper::HandleFrame()
 			for(unsigned int i=0;i<mapPointsTransformed.size();i++)
 			{
 				(*fle) << mapPointsTransformed[i][0] << " "
-					   << mapPointsTransformed[i][1] << " "
-					   << mapPointsTransformed[i][2] << std::endl;
+						<< mapPointsTransformed[i][1] << " "
+						<< mapPointsTransformed[i][2] << std::endl;
 			}
 
 			fle->flush();
@@ -589,7 +586,7 @@ void PTAMWrapper::HandleFrame()
 	if(isVeryGood) snprintf(charBuf,1000,"\nQuality: best            ");
 	else if(isGood) snprintf(charBuf,1000,"\nQuality: good           ");
 	else snprintf(charBuf,1000,"\nQuality: lost                       ");
-	
+
 	snprintf(charBuf+20,800, "scale: %.3f (acc: %.3f)                            ",filter->getCurrentScales()[0],(double)filter->getScaleAccuracy());
 	snprintf(charBuf+50,800, "PTAM time: %i ms                            ",(int)(1000*timeALL.toSec()));
 	snprintf(charBuf+68,800, "(%i ms total)  ",(int)(1000*timeALL.toSec()));
@@ -692,15 +689,15 @@ void PTAMWrapper::HandleFrame()
 		// - predictedPoseSpeedATLASTNFO estimated for lastNfoTimestamp	(using imu only)
 		if(node->logfilePTAM != NULL)
 			(*(node->logfilePTAM)) << (isGood ? (isVeryGood ? 2 : 1) : 0) << " " <<
-				(mimFrameTime_workingCopy-filter->delayVideo) << " " << filterPosePrePTAM[0] << " " << filterPosePrePTAM[1] << " " << filterPosePrePTAM[2] << " " << filterPosePrePTAM[3] << " " << filterPosePrePTAM[4] << " " << filterPosePrePTAM[5] << " " << filterPosePrePTAM[6] << " " << filterPosePrePTAM[7] << " " << filterPosePrePTAM[8] << " " << filterPosePrePTAM[9] << " " <<
-				filterPosePostPTAM[0] << " " << filterPosePostPTAM[1] << " " << filterPosePostPTAM[2] << " " << filterPosePostPTAM[3] << " " << filterPosePostPTAM[4] << " " << filterPosePostPTAM[5] << " " << filterPosePostPTAM[6] << " " << filterPosePostPTAM[7] << " " << filterPosePostPTAM[8] << " " << filterPosePostPTAM[9] << " " << 
-				PTAMResultTransformed[0] << " " << PTAMResultTransformed[1] << " " << PTAMResultTransformed[2] << " " << PTAMResultTransformed[3] << " " << PTAMResultTransformed[4] << " " << PTAMResultTransformed[5] << " " << 
-				scales[0] << " " << scales[1] << " " << scales[2] << " " << 
-				offsets[0] << " " << offsets[1] << " " << offsets[2] << " " << offsets[3] << " " << offsets[4] << " " << offsets[5] << " " <<
-				sums[0] << " " << sums[1] << " " << sums[2] << " " << 
-				PTAMResult[0] << " " << PTAMResult[1] << " " << PTAMResult[2] << " " << PTAMResult[3] << " " << PTAMResult[4] << " " << PTAMResult[5] << " " <<
-				PTAMResultSE3TwistOrg[0] << " " << PTAMResultSE3TwistOrg[1] << " " << PTAMResultSE3TwistOrg[2] << " " << PTAMResultSE3TwistOrg[3] << " " << PTAMResultSE3TwistOrg[4] << " " << PTAMResultSE3TwistOrg[5] << " " <<
-				videoFramePing << " " << mimFrameTimeRos_workingCopy << " " << mimFrameSEQ_workingCopy << std::endl;
+			(mimFrameTime_workingCopy-filter->delayVideo) << " " << filterPosePrePTAM[0] << " " << filterPosePrePTAM[1] << " " << filterPosePrePTAM[2] << " " << filterPosePrePTAM[3] << " " << filterPosePrePTAM[4] << " " << filterPosePrePTAM[5] << " " << filterPosePrePTAM[6] << " " << filterPosePrePTAM[7] << " " << filterPosePrePTAM[8] << " " << filterPosePrePTAM[9] << " " <<
+			filterPosePostPTAM[0] << " " << filterPosePostPTAM[1] << " " << filterPosePostPTAM[2] << " " << filterPosePostPTAM[3] << " " << filterPosePostPTAM[4] << " " << filterPosePostPTAM[5] << " " << filterPosePostPTAM[6] << " " << filterPosePostPTAM[7] << " " << filterPosePostPTAM[8] << " " << filterPosePostPTAM[9] << " " <<
+			PTAMResultTransformed[0] << " " << PTAMResultTransformed[1] << " " << PTAMResultTransformed[2] << " " << PTAMResultTransformed[3] << " " << PTAMResultTransformed[4] << " " << PTAMResultTransformed[5] << " " <<
+			scales[0] << " " << scales[1] << " " << scales[2] << " " <<
+			offsets[0] << " " << offsets[1] << " " << offsets[2] << " " << offsets[3] << " " << offsets[4] << " " << offsets[5] << " " <<
+			sums[0] << " " << sums[1] << " " << sums[2] << " " <<
+			PTAMResult[0] << " " << PTAMResult[1] << " " << PTAMResult[2] << " " << PTAMResult[3] << " " << PTAMResult[4] << " " << PTAMResult[5] << " " <<
+			PTAMResultSE3TwistOrg[0] << " " << PTAMResultSE3TwistOrg[1] << " " << PTAMResultSE3TwistOrg[2] << " " << PTAMResultSE3TwistOrg[3] << " " << PTAMResultSE3TwistOrg[4] << " " << PTAMResultSE3TwistOrg[5] << " " <<
+			videoFramePing << " " << mimFrameTimeRos_workingCopy << " " << mimFrameSEQ_workingCopy << std::endl;
 
 		pthread_mutex_unlock(&(node->logPTAM_CS));
 	}
@@ -723,7 +720,7 @@ void PTAMWrapper::renderGrid(TooN::SE3<> camFromWorld)
 	// The colour of the ref grid shows if the coarse stage of tracking was used
 	// (it's turned off when the camera is sitting still to reduce jitter.)
 	glColor4f(0,0,0,0.6);
-  
+
 	// The grid is projected manually, i.e. GL receives projected 2D coords to draw.
 	int nHalfCells = 5;
 	int nTot = nHalfCells * 2 + 1;
@@ -751,17 +748,17 @@ void PTAMWrapper::renderGrid(TooN::SE3<> camFromWorld)
 	{
 		glBegin(GL_LINE_STRIP);
 		for(int j=0; j<nTot; j++)
-		CVD::glVertex(imVertices[i][j]);
+			CVD::glVertex(imVertices[i][j]);
 		glEnd();
-      
+
 		glBegin(GL_LINE_STRIP);
 		for(int j=0; j<nTot; j++)
-		CVD::glVertex(imVertices[j][i]);
+			CVD::glVertex(imVertices[j][i]);
 		glEnd();
 	};
-  
-  glLineWidth(1);
-  glColor3f(1,0,0);
+
+	glLineWidth(1);
+	glColor3f(1,0,0);
 
 
 
@@ -783,7 +780,7 @@ TooN::Vector<3> PTAMWrapper::evalNavQue(unsigned int from, unsigned int to, bool
 
 	for(std::deque<ardrone_autonomy::Navdata>::iterator cur = navInfoQueue.begin();
 			cur != navInfoQueue.end();
-			)
+	)
 	{
 		int curStampMs = getMS(cur->header.stamp);
 
@@ -809,7 +806,7 @@ TooN::Vector<3> PTAMWrapper::evalNavQue(unsigned int from, unsigned int to, bool
 	for(std::deque<ardrone_autonomy::Navdata>::iterator cur = navInfoQueue.begin();
 			cur != navInfoQueue.end();
 			cur++
-			)
+	)
 	{
 		int frontStamp = getMS(cur->header.stamp);
 		if(frontStamp < from)		// packages before: delete
@@ -1001,14 +998,14 @@ bool PTAMWrapper::handleCommand(std::string s)
 {
 	if(s.length() == 5 && s.substr(0,5) == "space")
 	{
-  		mpTracker->pressSpacebar();
+		mpTracker->pressSpacebar();
 	}
 
 	// ptam reset: resets only PTAM, keeps filter state.
 	if(s.length() == 5 && s.substr(0,5) == "reset")
 	{
 		//filter->clearPTAM();
-  		Reset();
+		Reset();
 
 	}
 

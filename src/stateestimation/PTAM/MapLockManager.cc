@@ -7,7 +7,7 @@
 
   Author: Robert Castle, 2008, bob@robots.ox.ac.uk
 
-********************************************************************/
+ ********************************************************************/
 
 #include "MapLockManager.h"
 
@@ -25,7 +25,7 @@ namespace PTAMM {
  */
 void MapLockManager::Register( void * t )
 {
-  mLockRecords[ t ] = false;
+	mLockRecords[ t ] = false;
 }
 
 /**
@@ -34,7 +34,7 @@ void MapLockManager::Register( void * t )
  */
 void MapLockManager::UnRegister( void * t)
 {
-  mLockRecords.erase( t );
+	mLockRecords.erase( t );
 }
 
 
@@ -45,14 +45,14 @@ void MapLockManager::UnRegister( void * t)
  */
 bool MapLockManager::IsRegistered( void * t)
 {
-  std::map< void *, bool >::iterator i;
-  i = mLockRecords.find( t );
-  if( i != mLockRecords.end() ) {
-    return true;
-  }
-  else {
-    return false;
-  }
+	std::map< void *, bool >::iterator i;
+	i = mLockRecords.find( t );
+	if( i != mLockRecords.end() ) {
+		return true;
+	}
+	else {
+		return false;
+	}
 
 }
 
@@ -67,27 +67,27 @@ bool MapLockManager::IsRegistered( void * t)
  */
 bool MapLockManager::CheckLockAndWait( void * t, int nTimeout)
 {
-  //not locked continue
-  if( !mbLocked ) {
-    return false;
-  }
+	//not locked continue
+	if( !mbLocked ) {
+		return false;
+	}
 
-  //we are locked so ack
-  mLockRecords[ t ] = true;
+	//we are locked so ack
+	mLockRecords[ t ] = true;
 
-  //if locked do we wait.
-  while( mbLocked )
-  {
+	//if locked do we wait.
+	while( mbLocked )
+	{
 #ifdef WIN32
-    Sleep(1);
+		Sleep(1);
 #else
-    usleep(300);
+		usleep(300);
 #endif
-  }
+	}
 
-  mLockRecords[ t ] = false;
-  
-  return true;
+	mLockRecords[ t ] = false;
+
+	return true;
 }
 
 
@@ -100,54 +100,54 @@ bool MapLockManager::CheckLockAndWait( void * t, int nTimeout)
  */
 bool MapLockManager::LockMap( void * t, int nTimeout )
 {
-  if( mbLocked && t != mLockingThread )  {
-    std::cerr << "Map is already locked by another thread." << std::endl;
-    return false;
-  }
-    
-  mbLocked = true;
-  mLockingThread = t;
+	if( mbLocked && t != mLockingThread )  {
+		std::cerr << "Map is already locked by another thread." << std::endl;
+		return false;
+	}
 
-  bool bAllAck = true;
-  std::map< void *, bool >::iterator i;
+	mbLocked = true;
+	mLockingThread = t;
 
-  //if thread is the only user then you have got lock
-  if( mLockRecords.size() == 1 )  {
-    if( mLockRecords.find( t ) != mLockRecords.end() ) {
-      std::cerr << "only map user. lock granted" << std::endl;
-      return true;
-    }
-    else  {
-      std::cerr << "WARNING: This thread is not registered to this map! Another thread is so waiting for them." << std::endl;
-    }
-  }
+	bool bAllAck = true;
+	std::map< void *, bool >::iterator i;
 
-  //wait for other threads to ack.
-  do
-  {
-    bAllAck = true;
-    for( i = mLockRecords.begin(); i != mLockRecords.end(); i++ )
-    {
-      if( (*i).first == t ) {
-        //locking yourself out is stupid
-        continue;
-      }
+	//if thread is the only user then you have got lock
+	if( mLockRecords.size() == 1 )  {
+		if( mLockRecords.find( t ) != mLockRecords.end() ) {
+			std::cerr << "only map user. lock granted" << std::endl;
+			return true;
+		}
+		else  {
+			std::cerr << "WARNING: This thread is not registered to this map! Another thread is so waiting for them." << std::endl;
+		}
+	}
 
-      //will only go true when all have ackknowledged
-      bAllAck = bAllAck && (*i).second;
-    }
+	//wait for other threads to ack.
+	do
+	{
+		bAllAck = true;
+		for( i = mLockRecords.begin(); i != mLockRecords.end(); i++ )
+		{
+			if( (*i).first == t ) {
+				//locking yourself out is stupid
+				continue;
+			}
 
-    //wait for a bit
-    if(!bAllAck)  {
+			//will only go true when all have ackknowledged
+			bAllAck = bAllAck && (*i).second;
+		}
+
+		//wait for a bit
+		if(!bAllAck)  {
 #ifdef WIN32
-      Sleep(1);
+			Sleep(1);
 #else
-      usleep(300);
+			usleep(300);
 #endif
-    }
-  }  while( !bAllAck );
+		}
+	}  while( !bAllAck );
 
-  return true;
+	return true;
 }
 
 /**
@@ -157,13 +157,13 @@ bool MapLockManager::LockMap( void * t, int nTimeout )
  */
 bool MapLockManager::UnlockMap( void * t)
 {
-  if(t == mLockingThread) {
-    mbLocked = false;
-    mLockingThread = NULL;
-    return true;
-  }
+	if(t == mLockingThread) {
+		mbLocked = false;
+		mLockingThread = NULL;
+		return true;
+	}
 
-  return false;
+	return false;
 }
 
 

@@ -1,5 +1,5 @@
 // -*- c++ -*- 
-// Copyright 2008 Isis Innovation Limited
+// Copyright 2009 Isis Innovation Limited
 //
 // SmallBlurryImage-based relocaliser
 // 
@@ -7,6 +7,9 @@
 // Just compare a small, blurred version of the input frame to all the KFs,
 // choose the closest match, and then estimate a camera rotation by direct image
 // minimisation.
+//
+// This has been modified to search the keyframes of all maps to allow map switching
+
 
 #ifndef __RELOCALISER_H
 #define __RELOCALISER_H
@@ -16,31 +19,33 @@
 
 #include "Map.h"
 
+namespace PTAMM {
+
 
 class Relocaliser
 {
 public:
-  Relocaliser(Map &map, ATANCamera &camera);
-  bool AttemptRecovery(KeyFrame &k);
-  SE3<> BestPose();
-  
+	Relocaliser(std::vector<Map*> &maps, ATANCamera &camera);
+	bool AttemptRecovery(Map & currentMap, KeyFrame &k);
+	SE3<> BestPose();
+
 protected:
-  void ScoreKFs(KeyFrame &kCurrentF);
-  Map &mMap;
-  ATANCamera mCamera;
-  int mnBest;
-  double mdBestScore;
-  SE2<> mse2;
-  SE3<> mse3Best;
+	void ScoreKFs(Map * pMap, KeyFrame &kCurrentF);
+
+	std::vector<Map*> & mvpMaps;                    // Reference to all of the maps
+	Map * mpBestMap;                                // The map where the camera has been found
+	bool mbNewRun;                                 // Is this a new search of all maps?
+
+	ATANCamera mCamera;
+	int mnBest;
+	double mdBestScore;
+	SE2<> mse2;
+	SE3<> mse3Best;
 
 };
+
+
+}
+
 #endif
-
-
-
-
-
-
-
-
 

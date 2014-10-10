@@ -19,7 +19,7 @@ namespace PTAMM {
  * Constructor
  */
 MD5Wrapper::MD5Wrapper()
-  : mMD5( new MD5() )
+: mMD5( new MD5() )
 {
 }
 
@@ -28,7 +28,7 @@ MD5Wrapper::MD5Wrapper()
  */
 MD5Wrapper::~MD5Wrapper()
 {
-  delete mMD5;
+	delete mMD5;
 }
 
 
@@ -42,16 +42,16 @@ MD5Wrapper::~MD5Wrapper()
  */
 std::string MD5Wrapper::convToString(unsigned char *bytes)
 {
-  char asciihash[33];
+	char asciihash[33];
 
-  int p = 0;
-  for(int i=0; i<16; i++)
-  {
-    ::sprintf(&asciihash[p],"%02x",bytes[i]);
-    p += 2;
-  }
-  asciihash[32] = '\0';
-  return std::string(asciihash);
+	int p = 0;
+	for(int i=0; i<16; i++)
+	{
+		::sprintf(&asciihash[p],"%02x",bytes[i]);
+		p += 2;
+	}
+	asciihash[32] = '\0';
+	return std::string(asciihash);
 }
 
 /**
@@ -63,22 +63,22 @@ std::string MD5Wrapper::convToString(unsigned char *bytes)
  */
 bool MD5Wrapper::getHashFromData(const unsigned char *byte, unsigned int nBytesToRead, std::string & sMD5Hash)
 {
-  if( byte == NULL )  {
-    return "-1";
-  }
+	if( byte == NULL )  {
+		return "-1";
+	}
 
-  //init md5
-  MD5_CTX context;
-  mMD5->MD5Init( &context );
-  
-  mMD5->MD5Update( &context, byte, nBytesToRead );
-  
-  // generate hash and return the hash as std::string
-  unsigned char digest[16];
-  mMD5->MD5Final( digest, &context );
+	//init md5
+	MD5_CTX context;
+	mMD5->MD5Init( &context );
 
-  sMD5Hash = convToString(digest);
-  return true;
+	mMD5->MD5Update( &context, byte, nBytesToRead );
+
+	// generate hash and return the hash as std::string
+	unsigned char digest[16];
+	mMD5->MD5Final( digest, &context );
+
+	sMD5Hash = convToString(digest);
+	return true;
 }
 
 

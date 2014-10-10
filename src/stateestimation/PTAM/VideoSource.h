@@ -16,16 +16,21 @@
 #include <cvd/byte.h>
 #include <cvd/rgb.h>
 
+namespace PTAMM {
+
 struct VideoSourceData;
 
 class VideoSource
 {
- public:
-  VideoSource();
-  void GetAndFillFrameBWandRGB(CVD::Image<CVD::byte> &imBW, CVD::Image<CVD::Rgb<CVD::byte> > &imRGB);
-  CVD::ImageRef Size();
-  
- private:
-  void *mptr;
-  CVD::ImageRef mirSize;
+public:
+	VideoSource();
+	void GetAndFillFrameBWandRGB(CVD::Image<CVD::byte> &imBW, CVD::Image<CVD::Rgb<CVD::byte> > &imRGB);
+	CVD::ImageRef Size();
+
+private:
+	void *mptr;
+	CVD::ImageRef mirSize;
 };
+
+
+}

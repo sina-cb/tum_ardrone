@@ -31,11 +31,12 @@
 #include "cvd/byte.h"
 #include "MouseKeyHandler.h"
 #include "boost/thread.hpp"
+using namespace PTAMM;
 
-class Map;
-class MapMaker;
-class Tracker;
-class ATANCamera;
+class PTAMM::Map;
+class PTAMM::MapMaker;
+class PTAMM::Tracker;
+class PTAMM::ATANCamera;
 class Predictor;
 class DroneKalmanFilter;
 class DroneFlightModule;

@@ -6,7 +6,7 @@
   A set of utility functions
   Author: Robert Castle, 2009, bob@robots.ox.ac.uk
 
-********************************************************************/
+ ********************************************************************/
 
 #ifndef __PTAMM_UTILS__
 #define __PTAMM_UTILS__
@@ -25,10 +25,10 @@ namespace PTAMM {
  * @return the stream output
  */
 template<class T>
-  std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
 {
-  std::copy(v.begin(), v.end(), std::ostream_iterator<T>(os, " "));
-  return os;
+	std::copy(v.begin(), v.end(), std::ostream_iterator<T>(os, " "));
+	return os;
 }
 
 void PruneWhiteSpace(std::string & str);
