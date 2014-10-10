@@ -74,6 +74,9 @@ set(STATEESTIMATION_SOURCE_FILES
   src/stateestimation/main_stateestimation.cpp
   src/stateestimation/Predictor.cpp
   src/stateestimation/EstimationNode.cpp
+  src/stateestimation/DroneKalmanFilter.cpp
+  src/stateestimation/MapView.cpp
+  src/stateestimation/PTAMWrapper.cpp
   src/stateestimation/PTAMM/ATANCamera.cc
   src/stateestimation/PTAMM/Bundle.cc
   src/stateestimation/PTAMM/HomographyInit.cc
@@ -99,6 +102,9 @@ set(STATEESTIMATION_HEADER_FILES
   src/HelperFunctions.h   
   src/stateestimation/Predictor.h 
   src/stateestimation/EstimationNode.h
+  src/stateestimation/PTAMWrapper.h
+  src/stateestimation/DroneKalmanFilter.h
+  src/stateestimation/MapView.h
   src/stateestimation/PTAMM/ATANCamera.h
   src/stateestimation/PTAMM/Bundle.h
   src/stateestimation/PTAMM/customFixes.h

@@ -65,7 +65,7 @@ private:
 	// calls control() every time a new PTAM info is available or every 20ms.
 	void run();
 
-	// main routine; uses all available information, 
+	// main routine; uses all available information,
 	// in order to calculate and send a new control command to the drone
 	void control();
 
@@ -143,4 +143,3 @@ public:
 	void resetMapView();
 };
 #endif /* __MAPVIEW_H */
-
