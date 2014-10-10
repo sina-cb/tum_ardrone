@@ -21,9 +21,6 @@
 #ifndef __MAPVIEW_H
 #define __MAPVIEW_H
  
- 
- 
-
 #include "GLWindow2.h"
 #include <deque>
 #include "cvd/thread.h"

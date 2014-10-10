@@ -34,8 +34,6 @@ int main(int argc, char **argv)
 
   ROS_INFO("Started TUM ArDrone Stateestimation Node.");
 
-  ROS_ERROR("\n\n\nHELLO\n\n\n");
-
   //EstimationNode estimator;
 
   //dynamic_reconfigure::Server<tum_ardrone::StateestimationParamsConfig> srv;

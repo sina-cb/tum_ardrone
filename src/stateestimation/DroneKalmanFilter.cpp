@@ -732,8 +732,6 @@ void DroneKalmanFilter::predictUpTo(int timestamp, bool consume, bool useControl
 			predictTo = min(predictTo, getMS(xyzIterator->header.stamp)-delayXYZ);
 
 
-
-
 		predictInternal(useControlGains ? controlIterator->twist : geometry_msgs::Twist(),
 				(predictTo - predictdUpToTimestamp)*1000,
 				useControlGains &&
