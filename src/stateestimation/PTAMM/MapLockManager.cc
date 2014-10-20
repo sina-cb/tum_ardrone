@@ -17,8 +17,6 @@
 #include <Windows.h>
 #endif
 
-namespace PTAMM {
-
 /**
  * add thread to the usage map list
  * @param t thread to add
@@ -166,6 +164,4 @@ bool MapLockManager::UnlockMap( void * t)
 	return false;
 }
 
-
-}
 

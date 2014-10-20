@@ -16,8 +16,6 @@
 #include <cvd/utility.h>
 #include <gvars3/instances.h>
 
-namespace PTAMM {
-
 using namespace CVD;
 using namespace std;
 using namespace GVars3;
@@ -129,4 +127,3 @@ void Relocaliser::ScoreKFs(Map * pMap, KeyFrame &kCurrent)
 	}
 }
 
-}

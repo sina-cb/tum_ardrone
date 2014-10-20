@@ -16,8 +16,6 @@
 #include <TooN/se3.h>
 #include <vector>
 
-namespace PTAMM {
-
 using namespace TooN;
 
 // Homography matches are 2D-2D matches in a stereo pair, unprojected
@@ -64,7 +62,5 @@ protected:
 	std::vector<HomographyDecomposition> mvDecompositions;
 };
 
-
-}
 
 #endif

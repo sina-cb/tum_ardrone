@@ -16,8 +16,6 @@
 #include <cvd/byte.h>
 #include <cvd/rgb.h>
 
-namespace PTAMM {
-
 struct VideoSourceData;
 
 class VideoSource
@@ -32,5 +30,3 @@ private:
 	CVD::ImageRef mirSize;
 };
 
-
-}

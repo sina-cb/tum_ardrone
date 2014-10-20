@@ -24,8 +24,6 @@
 #include <windows.h>
 #endif
 
-namespace PTAMM {
-
 using namespace CVD;
 using namespace std;
 using namespace GVars3;
@@ -1445,7 +1443,4 @@ void MapMaker::GUICommandHandler(string sCommand, string sParams)  // Called by 
 	cout << "! MapMaker::GUICommandHandler: unhandled command "<< sCommand << endl;
 	//   exit(1);
 }; 
-
-
-}
 

@@ -35,8 +35,6 @@
 //md5 class include
 #include "MD5.h"
 
-namespace PTAMM {
-
 // Constants for MD5Transform routine.
 #define S11 7
 #define S12 12
@@ -322,7 +320,5 @@ void MD5::MD5_memset (POINTER output,int value,unsigned int len)
 	unsigned int i;
 	for (i = 0; i < len; i++)
 		((char *)output)[i] = (char)value;
-}
-
 }
 

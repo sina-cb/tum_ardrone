@@ -31,9 +31,6 @@ distribution.
 
 #include "tinyxml.h"
 
-namespace PTAMM {
-
-
 bool TiXmlBase::condenseWhiteSpace = true;
 
 // Microsoft compiler security
@@ -1886,7 +1883,4 @@ bool TiXmlPrinter::Visit( const TiXmlUnknown& unknown )
 	buffer += ">";
 	DoLineBreak();
 	return true;
-}
-
-
 }

@@ -1,5 +1,5 @@
 #pragma once
-/**
+ /**
  *  This file is part of tum_ardrone.
  *
  *  Copyright 2012 Jakob Engel <jajuengel@gmail.com> (Technical University of Munich)
@@ -20,6 +20,7 @@
  */
 #ifndef __ESTIMATIONNODE_H
 #define __ESTIMATIONNODE_H
+ 
 
 #include "ros/ros.h"
 #include "geometry_msgs/Twist.h"
@@ -36,11 +37,13 @@
 #include "tum_ardrone/StateestimationParamsConfig.h"
 #include "TooN/se3.h"
 
+
 class DroneKalmanFilter;
 class MapView;
 class PTAMWrapper;
 
-class EstimationNode{
+struct EstimationNode
+{
 private:
 	// comm with drone
 	ros::Subscriber navdata_sub; // drone navdata
@@ -131,6 +134,7 @@ public:
 	void toogleLogging();	// switches logging on or off.
 	std::string calibFile;
 	int arDroneVersion;
+
 
 };
 #endif /* __ESTIMATIONNODE_H */

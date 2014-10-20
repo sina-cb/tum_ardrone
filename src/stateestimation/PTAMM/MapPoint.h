@@ -18,8 +18,6 @@
 #include <cvd/timer.h>
 #include <set>
 
-namespace PTAMM {
-
 using namespace TooN;
 
 class KeyFrame;
@@ -87,7 +85,5 @@ struct MapPoint
 	// Random junk (e.g. for visualisation)
 	double dCreationTime; //timer.get_time() time of creation
 };
-
-}
 
 #endif

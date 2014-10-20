@@ -14,8 +14,6 @@
 #include <algorithm>
 #include <cassert>
 
-namespace PTAMM {
-
 using namespace TooN;
 
 struct Tukey
@@ -197,8 +195,6 @@ inline double LeastSquares::FindSigmaSquared(std::vector<double> &vdErrorSquared
 	return dSum / vdErrorSquared.size();
 }
 
-
-}
 
 #endif
 

@@ -20,8 +20,6 @@
 
 #include "tinyxml.h"
 
-namespace PTAMM {
-
 class Map;
 class KeyFrame;
 struct MapPoint;
@@ -106,7 +104,5 @@ private:
 	std::string msParams;                                   // The params passed to Init()
 	Map * mpInitMap;                                        // The map passed to Init(). The current map.
 };
-
-}
 
 #endif

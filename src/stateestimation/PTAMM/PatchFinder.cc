@@ -13,8 +13,6 @@
 #include <tmmintrin.h>
 #endif
 
-namespace PTAMM {
-
 using namespace CVD;
 using namespace std;
 
@@ -319,7 +317,7 @@ double PatchFinder::IterateSubPix(KeyFrame &kf)
 	// I.C. JT*d accumulator
 	Vector<3> v3Accum = Zeros;
 
-	ImageRef ir;
+	ImageRef irP;
 
 	byte* pTopLeftPixel;
 
@@ -335,18 +333,18 @@ double PatchFinder::IterateSubPix(KeyFrame &kf)
 
 	// Loop over template image
 	unsigned long nRowOffset = &kf.aLevels[mnSearchLevel].im[ImageRef(0,1)] - &kf.aLevels[mnSearchLevel].im[ImageRef(0,0)];
-	for(ir.y = 1; ir.y < mnPatchSize - 1; ir.y++)
+	for(irP.y = 1; irP.y < mnPatchSize - 1; irP.y++)
 	{
-		pTopLeftPixel = &im[PTAMM::ir(v2Base) + ImageRef(1,ir.y)]; // n.b. the x=1 offset, as with y
-		for(ir.x = 1; ir.x < mnPatchSize - 1; ir.x++)
+		pTopLeftPixel = &im[ir(v2Base) + ImageRef(1,irP.y)]; // n.b. the x=1 offset, as with y
+		for(irP.x = 1; irP.x < mnPatchSize - 1; irP.x++)
 		{
 			float fPixel =   // Calc target interpolated pixel
 					fMixTL * pTopLeftPixel[0]          + fMixTR * pTopLeftPixel[1] +
 					fMixBL * pTopLeftPixel[nRowOffset] + fMixBR * pTopLeftPixel[nRowOffset + 1];
 			pTopLeftPixel++;
-			double dDiff = fPixel - mimTemplate[ir] + mdMeanDiff;
-			v3Accum[0] += dDiff * mimJacs[ir - ImageRef(1,1)].first;
-			v3Accum[1] += dDiff * mimJacs[ir - ImageRef(1,1)].second;
+			double dDiff = fPixel - mimTemplate[irP] + mdMeanDiff;
+			v3Accum[0] += dDiff * mimJacs[irP - ImageRef(1,1)].first;
+			v3Accum[1] += dDiff * mimJacs[irP - ImageRef(1,1)].second;
 			v3Accum[2] += dDiff;  // Update JT*d
 		};
 	}
@@ -548,5 +546,3 @@ int PatchFinder::ZMSSDAtPoint(CVD::BasicImage<CVD::byte> &im, const CVD::ImageRe
 	return ((2*SA*SB - SA*SA - SB*SB)/N + nImageSumSq + mnTemplateSumSq - 2*nCrossSum);
 }
 
-
-}

@@ -1,7 +1,7 @@
 // -*- c++ -*-
 // Copyright 2008 Isis Innovation Limited
 
-#include "PTAM/OpenGL.h"
+#include "PTAMM/OpenGL.h"
 #include "GLWindow2.h"
 #include "GLWindowMenu.h"
 #include <stdlib.h>

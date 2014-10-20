@@ -20,9 +20,8 @@
 
 #include "EstimationNode.h"
 #include "ros/ros.h"
-#include "ros/console.h"
-//#include "PTAMWrapper.h"
-//#include "MapView.h"
+#include "PTAMWrapper.h"
+#include "MapView.h"
 
 // this global var is used in getMS(ros::Time t) to convert to a consistent integer timestamp used internally pretty much everywhere.
 // kind of an artifact from Windows-Version, where only that was available / used.
@@ -33,11 +32,9 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "drone_stateestimation");
 
-	if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME ".drone_stateestimation", ros::console::levels::Debug)){
-		ROS_ERROR("Changed!!!");
-	}
+	ROS_INFO("Started TUM ArDrone Stateestimation Node.");
 
-	ROS_DEBUG("Started TUM ArDrone Stateestimation Node.\n\n\n\n\n\n\n\n\n\n");
+	ROS_ERROR("Here. 1");
 
 	EstimationNode estimator;
 
@@ -46,13 +43,13 @@ int main(int argc, char **argv)
 	f = boost::bind(&EstimationNode::dynConfCb, &estimator, _1, _2);
 	srv.setCallback(f);
 
-	//estimator.ptamWrapper->startSystem();
-	//estimator.mapView->startSystem();
+	estimator.ptamWrapper->startSystem();
+	estimator.mapView->startSystem();
 
 	estimator.Loop();
 
-	//estimator.mapView->stopSystem();
-	//estimator.ptamWrapper->stopSystem();
+	estimator.mapView->stopSystem();
+	estimator.ptamWrapper->stopSystem();
 
 	return 0;
 }

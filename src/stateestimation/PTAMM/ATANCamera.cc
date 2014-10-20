@@ -5,8 +5,6 @@
 #include <iostream>
 #include <gvars3/instances.h>
 
-namespace PTAMM {
-
 using namespace std;
 using namespace CVD;
 using namespace GVars3;
@@ -317,4 +315,3 @@ Vector<2> ATANCamera::UFBUnProject(const Vector<2>& v2Im)
 
 const Vector<NUMTRACKERCAMPARAMETERS> ATANCamera::mvDefaultParams = makeVector(0.5, 0.75, 0.5, 0.5, 0.1);
 
-}

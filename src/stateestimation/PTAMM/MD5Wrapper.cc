@@ -13,8 +13,6 @@
 #include "MD5Wrapper.h"
 #include "MD5.h"
 
-namespace PTAMM {
-
 /**
  * Constructor
  */
@@ -82,4 +80,3 @@ bool MD5Wrapper::getHashFromData(const unsigned char *byte, unsigned int nBytesT
 }
 
 
-}

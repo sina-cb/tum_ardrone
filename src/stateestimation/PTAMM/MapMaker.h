@@ -21,8 +21,6 @@
 #include "KeyFrame.h"
 #include "ATANCamera.h"
 
-namespace PTAMM {
-
 
 // MapMaker dervives from CVD::Thread, so everything in void run() is its own thread.
 class MapMaker : protected CVD::Thread
@@ -148,8 +146,6 @@ protected:
 
 };
 
-
-}
 
 #endif
 

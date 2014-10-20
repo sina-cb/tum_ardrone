@@ -49,8 +49,6 @@
 #include <cvd/vector_image_ref.h>
 #include <gvars3/gvars3.h>
 
-namespace PTAMM {
-
 using namespace TooN;
 
 #define NUMTRACKERCAMPARAMETERS 5
@@ -185,9 +183,6 @@ inline Vector<2> ATANCamera::UFBLinearUnProject(const Vector<2>& fbframe)
 	v2Res[0] = (fbframe[0] - mvUFBLinearCenter[0]) * mvUFBLinearInvFocal[0];
 	v2Res[1] = (fbframe[1] - mvUFBLinearCenter[1]) * mvUFBLinearInvFocal[1];
 	return v2Res;
-}
-
-
 }
 
 #endif

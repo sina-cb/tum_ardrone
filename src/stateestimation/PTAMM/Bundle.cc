@@ -8,8 +8,6 @@
 #include <gvars3/instances.h>
 #include "settingsCustom.h"
 
-namespace PTAMM {
-
 using namespace GVars3;
 using namespace std;
 
@@ -645,5 +643,3 @@ vector<pair<int, int> > Bundle::GetOutlierMeasurements()
 	return mvOutlierMeasurementIdx;
 }
 
-
-}

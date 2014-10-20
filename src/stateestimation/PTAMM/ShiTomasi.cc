@@ -2,8 +2,6 @@
 #include "ShiTomasi.h"
 #include <math.h>
 
-namespace PTAMM {
-
 using namespace CVD;
 
 double FindShiTomasiScoreAtPoint(BasicImage<CVD::byte> &image,
@@ -38,5 +36,4 @@ double FindShiTomasiScoreAtPoint(BasicImage<CVD::byte> &image,
 };
 
 
-}
 

@@ -13,9 +13,6 @@
 #include <sstream>
 #include <gvars3/GStringUtil.h>
 
-namespace PTAMM {
-
-
 /**
  * Edit a string so that the only whitespace is a single space between elements.
  * @param str the string to edit. This gets replaced.
@@ -33,4 +30,3 @@ void PruneWhiteSpace(std::string & str)
 	}
 }
 
-}

@@ -11,8 +11,6 @@
 #include <TooN/TooN.h>
 #include <cvd/image_ref.h>
 
-namespace PTAMM {
-
 using namespace TooN;
 
 // Set of global colours useful for drawing stuff:
@@ -62,7 +60,5 @@ inline Vector<2> LevelNPos(Vector<2> v2RootPos, int nLevel)
 	return v2Ans;
 		}
 
-
-}
 
 #endif

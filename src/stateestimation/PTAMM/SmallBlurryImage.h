@@ -13,9 +13,6 @@
 #include "KeyFrame.h"
 #include "ATANCamera.h"
 
-namespace PTAMM {
-
-
 class SmallBlurryImage
 {
 public:
@@ -35,9 +32,6 @@ protected:
 	bool mbMadeJacs;
 	static CVD::ImageRef mirSize;
 };
-
-
-}
 
 #endif
 

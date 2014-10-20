@@ -16,8 +16,6 @@
 #include <iterator>
 #include <vector>
 
-namespace PTAMM {
-
 /**
  * Output a vector as a stream that is space separated.
  * @param os Output stream
@@ -32,7 +30,5 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
 }
 
 void PruneWhiteSpace(std::string & str);
-
-}
 
 #endif

@@ -20,8 +20,6 @@
 #include <deque>
 #include "MapLockManager.h"
 
-namespace PTAMM {
-
 struct MapPoint;
 class KeyFrame;
 // We will not need games in our application
@@ -72,8 +70,6 @@ private:
 
 };
 
-
-}
 
 #endif
 

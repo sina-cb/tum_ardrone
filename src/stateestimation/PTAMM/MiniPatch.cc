@@ -1,8 +1,6 @@
 // Copyright 2008 Isis Innovation Limited
 #include "MiniPatch.h"
 
-namespace PTAMM {
-
 using namespace CVD;
 using namespace std;
 
@@ -99,4 +97,3 @@ int MiniPatch::mnRange = 10;
 int MiniPatch::mnMaxSSD = 9999;
 
 
-}

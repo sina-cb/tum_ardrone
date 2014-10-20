@@ -8,8 +8,6 @@
 #include <TooN/wls.h>
 #include "MEstimator.h"
 
-namespace PTAMM {
-
 using namespace std;
 bool HomographyInit::IsHomographyInlier(Matrix<3> m3Homography, HomographyMatch match)
 {
@@ -431,8 +429,6 @@ void HomographyInit::ChooseBestDecomposition()
 		else
 			mvDecompositions.erase(mvDecompositions.begin());
 	}
-
-}
 
 }
 

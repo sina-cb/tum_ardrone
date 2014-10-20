@@ -4,8 +4,6 @@
 #include "KeyFrame.h"
 /*#include "Game.h"*/
 
-namespace PTAMM {
-
 /**
  * Constructor. Calls reset and sets the map ID
  */
@@ -107,6 +105,4 @@ void Map::EmptyTrash()
 	vpPointsTrash.clear();
 }
 
-
-}
 

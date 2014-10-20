@@ -7,8 +7,6 @@
 #include <TooN/Cholesky.h>
 #include <TooN/wls.h>
 
-namespace PTAMM {
-
 using namespace CVD;
 using namespace std;
 
@@ -265,6 +263,4 @@ SE3<> SmallBlurryImage::SE3fromSE2(SE2<> se2, ATANCamera camera)
 	return se3Result;
 }
 
-
-}
 

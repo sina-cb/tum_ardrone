@@ -33,8 +33,6 @@
 
 #define NUM_LOST_FRAMES 3
 
-namespace PTAMM {
-
 class TrackerData;
 struct Trail    // This struct is used for initial correspondences of the first stereo pair.
 {
@@ -181,13 +179,4 @@ protected:
 };
 
 
-}
-
-
 #endif
-
-
-
-
-
-

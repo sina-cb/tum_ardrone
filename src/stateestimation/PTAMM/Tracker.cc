@@ -20,7 +20,6 @@
 
 #include "settingsCustom.h"
 
-namespace PTAMM {
 
 using namespace CVD;
 using namespace std;
@@ -1245,4 +1244,3 @@ void Tracker::SetNewMap(Map * map)
 ImageRef TrackerData::irImageSize;  // Static member of TrackerData lives here
 
 
-}

@@ -31,8 +31,6 @@
 #include "direct.h"
 #endif
 
-namespace PTAMM {
-
 using namespace std;
 using namespace GVars3;
 
@@ -1818,4 +1816,3 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 				return NULL;
 			}
 
-		}

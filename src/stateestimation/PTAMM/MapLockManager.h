@@ -15,8 +15,6 @@
 #include <map>
 #include <cvd/thread.h>
 
-namespace PTAMM {
-
 /**
  * This class is to be used by any thread that want to gain a sole
  * lock on a map to use it. Typically this used by the mapserializer.
@@ -44,9 +42,6 @@ private:
 	bool mbLocked;                               // is the map locked
 
 };
-
-
-}
 
 
 #endif

@@ -83,8 +83,6 @@ distribution.
 #endif
 #endif	
 
-namespace PTAMM {
-
 
 class TiXmlDocument;
 class TiXmlElement;
@@ -1802,8 +1800,6 @@ private:
 #pragma warning( pop )
 #endif
 
-
-}
 
 #endif
 

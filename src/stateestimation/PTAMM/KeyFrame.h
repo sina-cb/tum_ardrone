@@ -27,8 +27,6 @@
 #include <map>
 #include "ATANCamera.h"
 
-namespace PTAMM {
-
 using namespace TooN;
 
 struct MapPoint;
@@ -105,7 +103,5 @@ public:
 };
 
 typedef std::map<MapPoint*, Measurement>::iterator meas_it;  // For convenience, and to work around an emacs paren-matching bug
-
-}
 
 #endif

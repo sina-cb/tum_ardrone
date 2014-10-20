@@ -24,8 +24,6 @@ distribution.
 
 #include "tinyxml.h"
 
-namespace PTAMM {
-
 
 // The goal of the seperate error file is to make the first
 // step towards localization. tinyxml (currently) only supports
@@ -54,6 +52,4 @@ const char* TiXmlBase::errorString[ TIXML_ERROR_STRING_COUNT ] =
 		"Error parsing CDATA.",
 		"Error when TiXmlDocument added to document, because TiXmlDocument can only be at the root.",
 };
-
-}
 

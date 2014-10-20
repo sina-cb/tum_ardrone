@@ -12,8 +12,6 @@
 
 #include <string>
 
-namespace PTAMM {
-
 class MD5;
 
 class MD5Wrapper
@@ -31,7 +29,5 @@ private:
 	MD5 *mMD5;
 
 };
-
-}
 
 #endif

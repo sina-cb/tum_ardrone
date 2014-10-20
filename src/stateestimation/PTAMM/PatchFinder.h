@@ -45,8 +45,6 @@
 #include "MapPoint.h"
 #include "LevelHelpers.h"
 
-namespace PTAMM {
-
 using namespace TooN;
 
 
@@ -137,8 +135,6 @@ protected:
 	Matrix<2> mm2LastWarpMatrix;       // What was the last warp matrix this PatchFinder used?
 };
 
-
-}
 
 #endif
 

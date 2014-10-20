@@ -17,8 +17,6 @@
 #include <TooN/TooN.h>
 #include <vector>
 
-namespace PTAMM {
-
 using namespace TooN;
 
 
@@ -38,7 +36,5 @@ struct MiniPatch
 	CVD::Image<CVD::byte> mimOrigPatch;  // Original pixels
 };
 
-
-}
 
 #endif

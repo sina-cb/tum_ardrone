@@ -7,8 +7,6 @@
 #define __SMALL_MATRIX_OPTS
 #include <cassert>
 
-namespace PTAMM {
-
 inline Matrix<2> M2Inverse(const Matrix<2> &m)
 		{
 	Matrix<2> m2Res;
@@ -35,8 +33,6 @@ inline double M3Det(Matrix<3> m )
 			m[0][0] * (m[1][1] * m[2][2]  - m[1][2] * m[2][1]) -
 			m[0][1] * (m[1][0] * m[2][2]  - m[1][2] * m[2][0]) +
 			m[0][2] * (m[1][0] * m[2][1]  - m[1][1] * m[2][0]);
-}
-
 }
 
 #endif

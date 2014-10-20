@@ -31,8 +31,6 @@
 #include <set>
 #include <list>
 
-namespace PTAMM {
-
 using namespace TooN;
 
 // An index into the big measurement map which stores all the measurements.
@@ -153,9 +151,6 @@ protected:
 
 	bool *mpbAbortSignal;
 };
-
-
-}
 
 
 #endif

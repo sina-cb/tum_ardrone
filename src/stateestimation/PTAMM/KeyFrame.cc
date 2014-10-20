@@ -6,8 +6,6 @@
 #include <cvd/fast_corner.h>
 #include "settingsCustom.h"
 
-namespace PTAMM {
-
 using namespace CVD;
 using namespace std;
 using namespace GVars3;
@@ -210,5 +208,3 @@ struct LevelHelpersFiller // Code which should be initialised on init goes here;
 };
 static LevelHelpersFiller foo;
 
-
-}

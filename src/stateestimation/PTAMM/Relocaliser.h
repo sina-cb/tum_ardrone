@@ -19,8 +19,6 @@
 
 #include "Map.h"
 
-namespace PTAMM {
-
 
 class Relocaliser
 {
@@ -44,8 +42,6 @@ protected:
 
 };
 
-
-}
 
 #endif
 

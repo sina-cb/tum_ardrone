@@ -37,9 +37,6 @@
 
 #include <string>
 
-namespace PTAMM {
-
-
 typedef unsigned char *POINTER;
 
 /**
@@ -72,7 +69,5 @@ private:
 	void MD5_memset (POINTER, int, unsigned int);
 };
 
-
-}
 
 #endif

@@ -13,8 +13,6 @@
 // It's very code-heavy for an h-file (it's a bunch of methods really)
 // but it's only included from Tracker.cc!
 
-namespace PTAMM {
-
 struct TrackerData
 {
 	TrackerData(MapPoint *pMapPoint)
@@ -107,9 +105,6 @@ struct TrackerData
 	// This static member is filled in by the tracker and allows in-image checks in this class above.
 	static CVD::ImageRef irImageSize;
 };
-
-
-}
 
 #endif
 
