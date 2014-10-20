@@ -20,6 +20,7 @@
 
 #include "EstimationNode.h"
 #include "ros/ros.h"
+#include "ros/console.h"
 //#include "PTAMWrapper.h"
 //#include "MapView.h"
 
@@ -32,19 +33,23 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "drone_stateestimation");
 
-	ROS_INFO("Started TUM ArDrone Stateestimation Node.");
+	if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME ".drone_stateestimation", ros::console::levels::Debug)){
+		ROS_ERROR("Changed!!!");
+	}
+
+	ROS_DEBUG("Started TUM ArDrone Stateestimation Node.\n\n\n\n\n\n\n\n\n\n");
 
 	EstimationNode estimator;
 
 	dynamic_reconfigure::Server<tum_ardrone::StateestimationParamsConfig> srv;
 	dynamic_reconfigure::Server<tum_ardrone::StateestimationParamsConfig>::CallbackType f;
 	f = boost::bind(&EstimationNode::dynConfCb, &estimator, _1, _2);
-	//srv.setCallback(f);
+	srv.setCallback(f);
 
 	//estimator.ptamWrapper->startSystem();
 	//estimator.mapView->startSystem();
 
-	//estimator.Loop();
+	estimator.Loop();
 
 	//estimator.mapView->stopSystem();
 	//estimator.ptamWrapper->stopSystem();

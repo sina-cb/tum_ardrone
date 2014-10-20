@@ -95,7 +95,7 @@ public:
 	std::string packagePath;
 
 	EstimationNode();
-//	~EstimationNode();
+	~EstimationNode();
 
 
 	// ROS message callbacks

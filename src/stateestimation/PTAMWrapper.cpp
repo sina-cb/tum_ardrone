@@ -20,3 +20,47 @@
 
 #include "PTAMWrapper.h"
 
+pthread_mutex_t PTAMWrapper::navInfoQueueCS = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t PTAMWrapper::shallowMapCS = PTHREAD_MUTEX_INITIALIZER;
+
+pthread_mutex_t PTAMWrapper::logScalePairs_CS = PTHREAD_MUTEX_INITIALIZER;
+
+PTAMWrapper::PTAMWrapper(DroneKalmanFilter* f, EstimationNode* nde)
+{
+	filter = f;
+	node = nde;
+
+	mpMap = 0;
+	mpMapMaker = 0;
+	mpTracker = 0;
+	predConvert = 0;
+	predIMUOnlyForScale = 0;
+	mpCamera = 0;
+	newImageAvailable = false;
+
+	mapPointsTransformed = std::vector<tvec3>();
+	keyFramesTransformed = std::vector<tse3>();
+
+
+	predConvert = new Predictor();
+	predIMUOnlyForScale = new Predictor();
+	imuOnlyPred = new Predictor();
+
+	drawUI = UI_PRES;
+	frameWidth = frameHeight = 0;
+
+	minKFDist = 0;
+	minKFWiggleDist = 0;
+	minKFTimeDist = 0;
+
+	maxKF = 60;
+
+	logfileScalePairs = 0;
+}
+
+
+void PTAMWrapper::setPTAMPars(double minKFTimeDist, double minKFWiggleDist, double minKFDist){
+
+
+
+}

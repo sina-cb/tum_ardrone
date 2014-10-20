@@ -19,4 +19,27 @@
  */
  
 #include "MapView.h"
+#include "../HelperFunctions.h"
+#include <cvd/gl_helpers.h>
+#include <gvars3/GStringUtil.h>
+#include "Predictor.h"
+#include <gvars3/instances.h>
+#include "DroneKalmanFilter.h"
+#include "PTAMWrapper.h"
+#include "EstimationNode.h"
+
+pthread_mutex_t MapView::trailPointsVec_CS = PTHREAD_MUTEX_INITIALIZER; //pthread_mutex_lock( &cs_mutex );
+
+MapView::MapView(DroneKalmanFilter* f, PTAMWrapper* p, EstimationNode* nde)
+{
+	filter = f;
+	ptamWrapper = p;
+	node = nde;
+	drawUI = UI_PRES;
+	resetRequested = false;
+	trailPoints = std::vector<TrailPoint>();
+	predConvert = new Predictor();
+	clearTrail = false;
+	resetMapViewFlag = true;
+}
 
