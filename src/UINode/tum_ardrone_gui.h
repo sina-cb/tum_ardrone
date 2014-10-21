@@ -69,6 +69,8 @@ private slots:
     void closeWindowSlot();
 
 
+    void on_buttonTakeoff_clicked();
+
 signals:
 	void setCountsSignal(unsigned int nav,unsigned int control,unsigned int pose,unsigned int joy);
     void setPingsSignal(int p500, int p20000);
