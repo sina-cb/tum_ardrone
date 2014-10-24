@@ -189,7 +189,6 @@ void PTAMWrapper::run()
 
 	ResetInternal();
 
-
 	snprintf(charBuf,200,"Video resolution: %d x %d",frameWidth,frameHeight);
 	ROS_INFO(charBuf);
 	node->publishCommand(std::string("u l ")+charBuf);
@@ -223,6 +222,10 @@ void PTAMWrapper::run()
 
 			HandleFrame();
 
+			//TODO: Maps should somehow be handled!
+			/*if (mpMap->vpPoints.size() != 0){
+				mvpMaps.push_back(mpMap);
+			}*/
 
 			if(changeSizeNextRender)
 			{
@@ -328,11 +331,6 @@ void PTAMWrapper::HandleFrame()
 	{
 		node->publishCommand("u l PTAM initialization started (took first KF)");
 	}
-
-
-
-
-
 
 	// --------------------------- assess result ------------------------------
 	bool isGood = true;

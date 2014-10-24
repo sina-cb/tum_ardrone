@@ -503,6 +503,8 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 		}
 	}
 
+	printf("SALAAAAAAAM!!!!!!!!!!!!!!!!!!!!!!\n");
+
 	// Rotate and translate the map so the dominant plane is at z=0:
 	printf("PTAM Init: re-scaleing map with %f\n", 0.1 / pkFirst->dSceneDepthMean);
 	/*ApplyGlobalTransformationToMap(CalcPlaneAligner());*/
