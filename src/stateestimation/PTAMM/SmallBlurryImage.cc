@@ -203,6 +203,7 @@ pair<SE2<>,double> SmallBlurryImage::IteratePosRelToTarget(SmallBlurryImage &oth
 
 	result_pair.first = se2CtoC;
 	result_pair.second = dFinalScore;
+
 	return result_pair;
 }
 

@@ -26,12 +26,12 @@ public:
 	Relocaliser(std::vector<Map*> &maps, ATANCamera &camera);
 	bool AttemptRecovery(Map & currentMap, KeyFrame &k);
 	SE3<> BestPose();
+	Map * mpBestMap;                                // The map where the camera has been found
 
 protected:
 	void ScoreKFs(Map * pMap, KeyFrame &kCurrentF);
 
 	std::vector<Map*> & mvpMaps;                    // Reference to all of the maps
-	Map * mpBestMap;                                // The map where the camera has been found
 	bool mbNewRun;                                 // Is this a new search of all maps?
 
 	ATANCamera mCamera;

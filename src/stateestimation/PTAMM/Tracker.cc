@@ -19,8 +19,6 @@
 #include <fcntl.h>
 
 #include "settingsCustom.h"
-
-
 using namespace CVD;
 using namespace std;
 using namespace GVars3;
@@ -53,6 +51,8 @@ Tracker::Tracker(ImageRef irVideoSize, const ATANCamera &c, std::vector<Map*> &m
 	mpSBILastFrame = NULL;
 	mpSBIThisFrame = NULL;
 	mnLastKeyFrameDroppedClock = 0;
+
+	mRelocaliser.mpBestMap = mpMap;
 
 	// Most of the initialisation is done in Reset()
 	Reset();
@@ -212,8 +212,9 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 		/*if(mbDraw)
 			RenderGrid();*/
 	}
-	else // If there is no map, try to make one.
+	else{ // If there is no map, try to make one.
 		TrackForInitialMap();
+	}
 
 	// GUI interface
 	while(!mvQueuedCommands.empty())
@@ -222,29 +223,6 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 		mvQueuedCommands.erase(mvQueuedCommands.begin());
 	}
 };
-
-void Tracker::tryToRecover()
-{
-	if(mpMap->IsGood())
-	{
-		mMessageForUser.str("");
-		mMessageForUser << "** Attempting recovery **.";
-		if(AttemptRecovery())
-		{
-			TrackMap();
-			AssessTrackingQuality();
-
-			if(mTrackingQuality == GOOD)
-				lastStepResult = T_RECOVERED_GOOD;
-			if(mTrackingQuality == DODGY)
-				lastStepResult = T_RECOVERED_DODGY;
-			if(mTrackingQuality == BAD)
-				lastStepResult = T_LOST;
-		}
-		else
-			lastStepResult = T_LOST;
-	}
-}
 
 void Tracker::TakeKF(bool force)
 {
@@ -303,6 +281,31 @@ bool Tracker::AttemptRecovery()
 	mv6CameraVelocity = Zeros;
 	mbJustRecoveredSoUseCoarse = true;
 	return true;*/
+}
+
+void Tracker::tryToRecover()
+{
+	if(mpMap->IsGood())
+	{
+		mMessageForUser.str("");
+		mMessageForUser << "** Attempting recovery **.";
+		if(AttemptRecovery())
+		{
+			cout << "TRACK MAP: Start" << endl;
+			TrackMap();
+			cout << "TRACK MAP: End" << endl;
+			AssessTrackingQuality();
+
+			if(mTrackingQuality == GOOD)
+				lastStepResult = T_RECOVERED_GOOD;
+			if(mTrackingQuality == DODGY)
+				lastStepResult = T_RECOVERED_DODGY;
+			if(mTrackingQuality == BAD)
+				lastStepResult = T_LOST;
+		}
+		else
+			lastStepResult = T_LOST;
+	}
 }
 
 /**

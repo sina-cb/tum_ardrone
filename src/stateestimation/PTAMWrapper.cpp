@@ -291,13 +291,11 @@ void PTAMWrapper::HandleFrame()
 	ros::Time startedPTAM = ros::Time::now();
 	mpTracker->TrackFrame(mimFrameBW_workingCopy, true);
 	TooN::SE3<> PTAMResultSE3 = mpTracker->GetCurrentPose();
+
 	lastPTAMMessage = msg = mpTracker->GetMessageForUser();
 	ros::Duration timePTAM= ros::Time::now() - startedPTAM;
-
 	TooN::Vector<6> PTAMResultSE3TwistOrg = PTAMResultSE3.ln();
-
 	node->publishTf(mpTracker->GetCurrentPose(),mimFrameTimeRos_workingCopy, mimFrameSEQ_workingCopy,"cam_front");
-
 
 	// 1. multiply from left by frontToDroneNT.
 	// 2. convert to xyz,rpy
@@ -306,8 +304,6 @@ void PTAMWrapper::HandleFrame()
 
 	// 3. transform with filter
 	TooN::Vector<6> PTAMResultTransformed = filter->transformPTAMObservation(PTAMResult);
-
-
 
 
 	// init failed?
