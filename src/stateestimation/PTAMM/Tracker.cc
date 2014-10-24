@@ -291,9 +291,7 @@ void Tracker::tryToRecover()
 		mMessageForUser << "** Attempting recovery **.";
 		if(AttemptRecovery())
 		{
-			cout << "TRACK MAP: Start" << endl;
 			TrackMap();
-			cout << "TRACK MAP: End" << endl;
 			AssessTrackingQuality();
 
 			if(mTrackingQuality == GOOD)

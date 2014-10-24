@@ -69,10 +69,7 @@ bool Relocaliser::AttemptRecovery(Map & currentMap, KeyFrame &kCurrent)
 	}
 
 	// And estimate a camera rotation from a 3DOF image alignment
-	cout << "AAA:" << mpBestMap->bGood << endl;
-	cout << "START CALL" << endl;
 	pair<SE2<>, double> result_pair = kCurrent.pSBI->IteratePosRelToTarget(*mpBestMap->vpKeyFrames[mnBest]->pSBI, 6);
-	cout << "END CALL" << endl;
 	mse2 = result_pair.first;
 	double dScore =result_pair.second;
 
