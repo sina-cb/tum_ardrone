@@ -100,7 +100,6 @@ public:
 	EstimationNode();
 	~EstimationNode();
 
-
 	// ROS message callbacks
 	void navdataCb(const ardrone_autonomy::NavdataConstPtr navdataPtr);
 	void velCb(const geometry_msgs::TwistConstPtr velPtr);
@@ -134,7 +133,6 @@ public:
 	void toogleLogging();	// switches logging on or off.
 	std::string calibFile;
 	int arDroneVersion;
-
 
 };
 #endif /* __ESTIMATIONNODE_H */

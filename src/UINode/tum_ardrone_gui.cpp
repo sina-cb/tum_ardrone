@@ -115,22 +115,18 @@ void tum_ardrone_gui::LandClicked()
 {
 	rosThread->sendLand();
 }
-
 void tum_ardrone_gui::TakeoffClicked()
 {
 	rosThread->sendTakeoff();
 }
-
 void tum_ardrone_gui::ToggleCamClicked()
 {
 	rosThread->sendToggleCam();
 }
-
 void tum_ardrone_gui::FlattrimClicked()
 {
 	rosThread->sendFlattrim();
 }
-
 void tum_ardrone_gui::EmergencyClicked()
 {
 	rosThread->sendToggleState();
@@ -140,7 +136,6 @@ void tum_ardrone_gui::ClearClicked()
 {
 	rosThread->publishCommand("c clearCommands");
 }
-
 void tum_ardrone_gui::SendClicked()
 {
 	QStringList l = ui.plainTextEditSendCommand->toPlainText().split('\n');
@@ -153,19 +148,18 @@ void tum_ardrone_gui::SendClicked()
 	}
 	setControlSource(CONTROL_AUTO);
 }
-
 void tum_ardrone_gui::ClearSendClicked()
 {
 	ClearClicked();
 	SendClicked();
 }
-
 void tum_ardrone_gui::ResetClicked()
 {
 	setControlSource(CONTROL_NONE);
 	ClearClicked();
 	rosThread->publishCommand("f reset");
 }
+
 
 void tum_ardrone_gui::LoadFileChanged(QString val)
 {
@@ -190,7 +184,6 @@ void tum_ardrone_gui::LoadFileChanged(QString val)
 		ui.plainTextEditSendCommand->setPlainText(buffer.c_str());
 	}
 }
-
 void tum_ardrone_gui::ToggledUseHovering(int val)
 {
 	useHovering = (val != 0);
@@ -222,6 +215,7 @@ void tum_ardrone_gui::ControlSourceChanged()
 
 	currentControlSource = s;
 }
+
 
 void tum_ardrone_gui::setControlSourceSlot(int cont)
 {
@@ -266,26 +260,23 @@ void tum_ardrone_gui::addLogLineSlot(QString s)
 {
 	ui.plainTextEditMessages->appendPlainText(s);
 }
-
 void tum_ardrone_gui::setAutopilotInfoSlot(QString s)
 {
 	ui.plainTextEditAutopilotStatus->setPlainText(s);
 }
-
 void tum_ardrone_gui::setStateestimationInfoSlot(QString s)
 {
 	ui.plainTextEditStateestimationStatus->setPlainText(s);
 }
-
 void tum_ardrone_gui::setMotorSpeedsSlot(QString s)
 {
 	ui.labelDroneMotors->setText(s);
 }
-
 void tum_ardrone_gui::closeWindowSlot()
 {
 	closeWindow();
 }
+
 
 // these may be called from external thread,
 // so they just "forward" the request.
@@ -293,41 +284,35 @@ void tum_ardrone_gui::setCounts(unsigned int nav,unsigned int control,unsigned i
 {
 	emit setCountsSignal(nav, control, pose, joy);
 }
-
 void tum_ardrone_gui::setControlSource(ControlSource cont)
 {
 	emit setControlSourceSignal((int)cont);
 }
-
 void tum_ardrone_gui::addLogLine(std::string s)
 {
 	emit addLogLineSignal(QString(s.c_str()));
 }
-
 void tum_ardrone_gui::setAutopilotInfo(std::string s)
 {
 	emit setAutopilotInfoSignal(QString(s.c_str()));
 }
-
 void tum_ardrone_gui::setMotorSpeeds(std::string s)
 {
 	emit setMotorSpeedsSignal(QString(s.c_str()));
 }
-
 void tum_ardrone_gui::setStateestimationInfo(std::string s)
 {
 	emit setStateestimationInfoSignal(QString(s.c_str()));
 }
-
 void tum_ardrone_gui::setPings(int p500, int p20000)
 {
 	emit setPingsSignal(p500, p20000);
 }
-
 void tum_ardrone_gui::closeWindow()
 {
 	emit closeWindowSignal();
 }
+
 
 // KB control stuff
 int tum_ardrone_gui::mapKey(int k)

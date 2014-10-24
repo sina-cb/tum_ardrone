@@ -26,6 +26,8 @@
 class MapMaker : protected CVD::Thread
 {
 public:
+	Map *mpMap;                       // The current map
+
 	MapMaker(std::vector<Map*> &maps, Map*m/*, const ATANCamera &cam*/);
 	~MapMaker();
 
@@ -37,12 +39,14 @@ public:
 			SE3<> KFOneDesiredCamFromWorld		//TODO: Addition of TUM_ARDRONE to PTAM
 	);
 
-	double initialScaleFactor;	//TODO: Addition of TUM_ARDRONE to PTAM
+
+	//TODO: Changed this part
+	/*double initialScaleFactor;	//TODO: Addition of TUM_ARDRONE to PTAM
 	double currentScaleFactor;	//TODO: Addition of TUM_ARDRONE to PTAM set exgternally for metric scale.
 	double minKFWiggleDist;		//TODO: Addition of TUM_ARDRONE to PTAM
 	double minKFDist;			//TODO: Addition of TUM_ARDRONE to PTAM
 	double lastMetricDist;		//TODO: Addition of TUM_ARDRONE to PTAM
-	double lastWiggleDist;		//TODO: Addition of TUM_ARDRONE to PTAM
+	double lastWiggleDist;		//TODO: Addition of TUM_ARDRONE to PTAM*/
 
 	void AddKeyFrame(KeyFrame &k);   // Add a key-frame to the map. Called by the tracker.
 	void RequestReset();   // Request that the we reset. Called by the tracker.
@@ -112,7 +116,6 @@ protected:
 	// Member variables:
 protected:
 	std::vector<Map*> &mvpMaps;       // The vector of maps
-	Map *mpMap;                       // The current map
 	Map *mpNewMap;                     // The new map, used as a temp placeholder
 	Map *mpSwitchMap;                  // The switch map, used as a temp placeholder
 

@@ -65,6 +65,13 @@ public:
 
 	std::string sSaveFile;                           // where the map was loaded from
 
+	double initialScaleFactor;	//TODO: Addition of TUM_ARDRONE to PTAM
+	double currentScaleFactor;	//TODO: Addition of TUM_ARDRONE to PTAM set exgternally for metric scale.
+	double minKFWiggleDist;		//TODO: Addition of TUM_ARDRONE to PTAM
+	double minKFDist;			//TODO: Addition of TUM_ARDRONE to PTAM
+	double lastMetricDist;		//TODO: Addition of TUM_ARDRONE to PTAM
+	double lastWiggleDist;		//TODO: Addition of TUM_ARDRONE to PTAM
+
 private:
 	int mnMapNum;                                    // The map number
 

@@ -391,8 +391,10 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 
 
 	// change the scale of the map so the second camera is wiggleScale away from the first
-	se3.get_translation() *= mdWiggleScale/dTransMagn;
-	initialScaleFactor = dTransIMUMagn / mdWiggleScale; //TODO: I think I should add one scale for each map
+	se3.get_translation() *= mdWiggleScale / dTransMagn;
+
+	//TODO: Changed this part
+	mpMap->initialScaleFactor = dTransIMUMagn / mdWiggleScale; //TODO: I think I should add one scale for each map
 
 	KeyFrame *pkFirst = new KeyFrame(kF);
 	KeyFrame *pkSecond = new KeyFrame(kS);
@@ -507,7 +509,7 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 	printf("PTAM Init: re-scaleing map with %f\n", 0.1 / pkFirst->dSceneDepthMean);
 	/*ApplyGlobalTransformationToMap(CalcPlaneAligner());*/
 	ApplyGlobalScaleToMap(1/pkFirst->dSceneDepthMean);
-	initialScaleFactor *= pkFirst->dSceneDepthMean; //TODO: This also need to be an array of initial Scale Factors, I GUESS
+	mpMap->initialScaleFactor *= pkFirst->dSceneDepthMean; //TODO: This also need to be an array of initial Scale Factors, I GUESS
 	ApplyGlobalTransformationToMap(KFZeroDesiredCamFromWorld.inverse());
 
 	mpMap->bGood = true;
@@ -916,15 +918,15 @@ bool MapMaker::NeedNewKeyFrame(KeyFrame &kCurrent)
 {
 	KeyFrame *pClosest = ClosestKeyFrame(kCurrent);
 	double dDist = KeyFrameLinearDist(kCurrent, *pClosest);	// distance in PTAMS system.
-	lastMetricDist = dDist * currentScaleFactor;		//TODO: lastMetricDist also needs to be checked for each map
-	lastWiggleDist = dDist / kCurrent.dSceneDepthMean;	//TODO: lastMetricDist also needs to be checked for each map
+	mpMap->lastMetricDist = dDist * mpMap->currentScaleFactor;		//TODO: lastMetricDist also needs to be checked for each map
+	mpMap->lastWiggleDist = dDist / kCurrent.dSceneDepthMean;	//TODO: lastMetricDist also needs to be checked for each map
 
 
 	/*if(dDist > GV2.GetDouble("MapMaker.MaxKFDistWiggleMult",1.0,SILENT) * mdWiggleScaleDepthNormalized)
 		return true;
 	return false;*/
 
-	if(lastWiggleDist > minKFWiggleDist || lastMetricDist > minKFDist)
+	if(mpMap->lastWiggleDist > mpMap->minKFWiggleDist || mpMap->lastMetricDist > mpMap->minKFDist)
 		return true;
 	return false;
 }

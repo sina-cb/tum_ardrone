@@ -133,9 +133,9 @@ void PTAMWrapper::ResetInternal()
 void PTAMWrapper::setPTAMPars(double minKFTimeDist, double minKFWiggleDist, double minKFDist)
 {
 	if(mpMapMaker != 0)
-		mpMapMaker->minKFDist = minKFDist;
+		mpMapMaker->mpMap->minKFDist = minKFDist;
 	if(mpMapMaker != 0)
-		mpMapMaker->minKFWiggleDist = minKFWiggleDist;
+		mpMapMaker->mpMap->minKFWiggleDist = minKFWiggleDist;
 	if(mpTracker != 0)
 		mpTracker->minKFTimeDist = minKFTimeDist;
 
@@ -319,10 +319,10 @@ void PTAMWrapper::HandleFrame()
 	if(mpTracker->lastStepResult == mpTracker->I_SECOND)
 	{
 		PTAMInitializedClock = getMS();
-		filter->setCurrentScales(TooN::makeVector(mpMapMaker->initialScaleFactor*1.2,mpMapMaker->initialScaleFactor*1.2,mpMapMaker->initialScaleFactor*1.2));
-		mpMapMaker->currentScaleFactor = filter->getCurrentScales()[0];
+		filter->setCurrentScales(TooN::makeVector(mpMapMaker->mpMap->initialScaleFactor*1.2,mpMapMaker->mpMap->initialScaleFactor*1.2,mpMapMaker->mpMap->initialScaleFactor*1.2));
+		mpMapMaker->mpMap->currentScaleFactor = filter->getCurrentScales()[0];
 		ROS_INFO("PTAM initialized!");
-		ROS_INFO("initial scale: %f\n",mpMapMaker->initialScaleFactor*1.2);
+		ROS_INFO("initial scale: %f\n",mpMapMaker->mpMap->initialScaleFactor*1.2);
 		node->publishCommand("u l PTAM initialized (took second KF)");
 		framesIncludedForScaleXYZ = -1;
 		lockNextFrame = true;
@@ -470,7 +470,7 @@ void PTAMWrapper::HandleFrame()
 				diffIMU.slice<0,2>() *= xyFactor; diffIMU[2] *= zFactor;
 
 				filter->updateScaleXYZ(diffPTAM, diffIMU, PTAMResult.slice<0,3>());
-				mpMapMaker->currentScaleFactor = filter->getCurrentScales()[0];
+				mpMapMaker->mpMap->currentScaleFactor = filter->getCurrentScales()[0];
 			}
 			framesIncludedForScaleXYZ = -1;	// causing reset afterwards
 		}
@@ -620,8 +620,8 @@ void PTAMWrapper::HandleFrame()
 
 
 			snprintf(charBuf,1000,"\nPTAM WiggleDist:              ");
-			snprintf(charBuf+18,800, "%.3f                          ",mpMapMaker->lastWiggleDist);
-			snprintf(charBuf+24,800, "MetricDist: %.3f",mpMapMaker->lastMetricDist);
+			snprintf(charBuf+18,800, "%.3f                          ",mpMapMaker->mpMap->lastWiggleDist);
+			snprintf(charBuf+24,800, "MetricDist: %.3f",mpMapMaker->mpMap->lastMetricDist);
 			msg += charBuf;
 		}
 	}
