@@ -352,6 +352,7 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 
 	ATANCamera &Camera = kF.Camera;
 
+
 	vector<HomographyMatch> vMatches;
 	for(unsigned int i=0; i<vTrailMatches.size(); i++)
 	{
@@ -373,9 +374,10 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 	}
 
 	// Check that the initialiser estimated a non-zero baseline
-	double dTransMagn = sqrt(se3.get_translation() * se3.get_translation());
+	double dTransMagn = sqrt((double)(se3.get_translation() * se3.get_translation()));
 	double dTransIMUMagn = sqrt((double)((KFZeroDesiredCamFromWorld.get_translation() - KFOneDesiredCamFromWorld.get_translation())*
 			(KFZeroDesiredCamFromWorld.get_translation() - KFOneDesiredCamFromWorld.get_translation())));
+
 	if(dTransMagn == 0)
 	{
 		cout << "  Estimated zero baseline from stereo pair, try again." << endl;
@@ -450,8 +452,8 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 		mFirst.nLevel = 0;
 		mFirst.Source = Measurement::SRC_ROOT;
 		mFirst.v2RootPos = vec(vTrailMatches[i].first);
-		mFirst.v2ImplanePos = Camera.UnProject(mFirst.v2RootPos);
-		mFirst.m2CamDerivs = Camera.GetProjectionDerivs();
+		mFirst.v2ImplanePos = Camera.UnProject(mFirst.v2RootPos); //
+		mFirst.m2CamDerivs = Camera.GetProjectionDerivs(); //
 		mFirst.bSubPix = true;
 		pkFirst->mMeasurements[p] = mFirst;
 		p->pMMData->sMeasurementKFs.insert(pkFirst);
@@ -460,8 +462,8 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 		mSecond.nLevel = 0;
 		mSecond.Source = Measurement::SRC_TRAIL;
 		mSecond.v2RootPos = finder.GetSubPixPos();
-		mSecond.v2ImplanePos = Camera.UnProject(mSecond.v2RootPos);
-		mSecond.m2CamDerivs = Camera.GetProjectionDerivs();
+		mSecond.v2ImplanePos = Camera.UnProject(mSecond.v2RootPos); //
+		mSecond.m2CamDerivs = Camera.GetProjectionDerivs(); //
 		mSecond.bSubPix = true;
 		pkSecond->mMeasurements[p] = mSecond;
 		p->pMMData->sMeasurementKFs.insert(pkSecond);
@@ -494,8 +496,6 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 	while(!mpMap->bBundleConverged_Full)
 	{
 		BundleAdjustAll();
-		/*if(mbResetRequested || mbReInitRequested || mbSwitchRequested)
-			return false;*/
 		if(mbResetRequested || ((double)(clock() - started)) / (double)CLOCKS_PER_SEC > 1.500)
 		{
 			printf("ABORT mapmaking, took more than 1.5s (deadlock?)\n");
@@ -503,11 +503,9 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 		}
 	}
 
-	printf("SALAAAAAAAM!!!!!!!!!!!!!!!!!!!!!!\n");
 
 	// Rotate and translate the map so the dominant plane is at z=0:
 	printf("PTAM Init: re-scaleing map with %f\n", 0.1 / pkFirst->dSceneDepthMean);
-	/*ApplyGlobalTransformationToMap(CalcPlaneAligner());*/
 	ApplyGlobalScaleToMap(1/pkFirst->dSceneDepthMean);
 	mpMap->initialScaleFactor *= pkFirst->dSceneDepthMean;
 	ApplyGlobalTransformationToMap(KFZeroDesiredCamFromWorld.inverse());
@@ -515,10 +513,12 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 	mpMap->bGood = true;
 	se3TrackerPose = pkSecond->se3CfromW;
 
+
 	cout << "  MapMaker: made initial map with " << mpMap->vpPoints.size() << " points." << endl;
 
 	TooN::Vector<3> ptamTrans = mpMap->vpKeyFrames[1]->se3CfromW.get_translation() - mpMap->vpKeyFrames[0]->se3CfromW.get_translation();
 	TooN::Vector<3> imuTrans = KFOneDesiredCamFromWorld.get_translation() - KFZeroDesiredCamFromWorld.get_translation();
+
 
 	printf("resulting PTAM Translation: (%.4f, %.4f, %.4f), IMU translation: (%.4f, %.4f, %.4f)",
 			ptamTrans[0],
@@ -528,8 +528,8 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 			imuTrans[1],
 			imuTrans[2]);
 
-	ptamTrans = ptamTrans / sqrt((double)(ptamTrans*ptamTrans));
-	imuTrans = imuTrans / sqrt((double)(imuTrans*imuTrans));
+	ptamTrans = ptamTrans / sqrt((double)(ptamTrans * ptamTrans));
+	imuTrans = imuTrans / sqrt((double)(imuTrans * imuTrans));
 	double angle = 180*acos((double)(ptamTrans * imuTrans))/3.1415;
 
 
