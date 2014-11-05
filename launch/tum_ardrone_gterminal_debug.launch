@@ -1,5 +1,5 @@
 <launch>
-  <node name="drone_stateestimation" pkg="tum_ardrone" type="drone_stateestimation" launch-prefix="/home/sina/hydro_workspace/src/tum_ardrone/launch/run_tmux.sh">
+  <node name="drone_stateestimation" pkg="tum_ardrone" type="drone_stateestimation" launch-prefix="$(find tum_ardrone)/launch/run_tmux.sh">
   </node>
   <node name="drone_autopilot" pkg="tum_ardrone" type="drone_autopilot">
   </node>
