@@ -46,9 +46,9 @@ PTAMWrapper::PTAMWrapper(DroneKalmanFilter* f, EstimationNode* nde)
 	filter = f;
 	node = nde;
 
-	mpMap = 0; 
-	mpMapMaker = 0; 
-	mpTracker = 0; 
+	mpMap = 0;
+	mpMapMaker = 0;
+	mpTracker = 0;
 	predConvert = 0;
 	predIMUOnlyForScale = 0;
 	mpCamera = 0;
@@ -245,9 +245,9 @@ void PTAMWrapper::run()
 }
 
 // called every time a new frame is available.
-// needs to be able to 
+// needs to be able to
 // - (finally) roll forward filter
-// - query it's state 
+// - query it's state
 // - add a PTAM observation to filter.
 void PTAMWrapper::HandleFrame()
 {
@@ -261,7 +261,6 @@ void PTAMWrapper::HandleFrame()
 	// reset?
 	if(resetPTAMRequested)
 		ResetInternal();
-
 
 	// make filter thread-safe.
 	// --------------------------- ROLL FORWARD TIL FRAME. This is ONLY done here. ---------------------------
@@ -281,7 +280,7 @@ void PTAMWrapper::HandleFrame()
 	TooN::Vector<6> PTAMPoseGuess = filter->backTransformPTAMObservation(filterPosePrePTAM.slice<0,6>());
 	// 2. convert to se3
 	predConvert->setPosRPY(PTAMPoseGuess[0], PTAMPoseGuess[1], PTAMPoseGuess[2], PTAMPoseGuess[3], PTAMPoseGuess[4], PTAMPoseGuess[5]);
-	// 3. multiply with rotation matrix	
+	// 3. multiply with rotation matrix
 	TooN::SE3<> PTAMPoseGuessSE3 = predConvert->droneToFrontNT * predConvert->globaltoDrone;
 
 
@@ -362,13 +361,13 @@ void PTAMWrapper::HandleFrame()
 		// maximum difference is 5 + 2*(number of seconds since PTAM observation).
 		double maxYawDiff = 10.0 + (getMS()-lastGoodYawClock)*0.002;
 		if(maxYawDiff > 20) maxYawDiff = 1000;
-		if(false && diffs[5] > maxYawDiff) 
+		if(false && diffs[5] > maxYawDiff)
 			isGood = false;
 
-		if(diffs[5] < 10) 
+		if(diffs[5] < 10)
 			lastGoodYawClock = getMS();
 
-		if(diffs[5] > 4.0) 
+		if(diffs[5] > 4.0)
 			isVeryGood = false;
 
 		// if rp difference too big: something certainly is wrong.
@@ -403,7 +402,7 @@ void PTAMWrapper::HandleFrame()
 	// otherwise distances are scaled such that height is weighted more.
 	// if isGood>=3 && framesIncludedForScale < 0			===> START INTERVAL
 	// if 18 <= framesIncludedForScale <= 36 AND isGood>=3	===> ADD INTERVAL, START INTERVAL
-	// if framesIncludedForScale > 36						===> set framesIncludedForScale=-1 
+	// if framesIncludedForScale > 36						===> set framesIncludedForScale=-1
 
 	// include!
 
@@ -427,7 +426,7 @@ void PTAMWrapper::HandleFrame()
 	if(framesIncludedForScaleXYZ >= 0) framesIncludedForScaleXYZ++;
 
 	// if interval is overdue: reset & dont add
-	if(includedTime > 3000) 
+	if(includedTime > 3000)
 	{
 		framesIncludedForScaleXYZ = -1;
 	}
@@ -482,7 +481,7 @@ void PTAMWrapper::HandleFrame()
 	if(lockNextFrame && isGood)
 	{
 		filter->scalingFixpoint = PTAMResult.slice<0,3>();
-		lockNextFrame = false;	
+		lockNextFrame = false;
 		//filter->useScalingFixpoint = true;
 
 		snprintf(charBuf,500,"locking scale fixpoint to %.3f %.3f %.3f",PTAMResultTransformed[0], PTAMResultTransformed[1], PTAMResultTransformed[2]);
@@ -664,7 +663,7 @@ void PTAMWrapper::HandleFrame()
 		myGLWindow->DrawCaption(msg);
 	}
 
-	lastPTAMResultRaw = PTAMResultSE3; 
+	lastPTAMResultRaw = PTAMResultSE3;
 	// ------------------------ LOG --------------------------------------
 	// log!
 	if(node->logfilePTAM != NULL)
@@ -807,7 +806,7 @@ TooN::Vector<3> PTAMWrapper::evalNavQue(unsigned int from, unsigned int to, bool
 		}
 		else if(frontStamp >= from && frontStamp <= to)
 		{
-			if(firstAdded == 0) 
+			if(firstAdded == 0)
 			{
 				firstAdded = frontStamp;
 				firstZ = cur->altd;

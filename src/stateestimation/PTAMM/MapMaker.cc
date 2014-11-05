@@ -350,8 +350,8 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 {
 	mdWiggleScale = *mgvdWiggleScale; // Cache this for the new map.
 
-	ATANCamera &Camera = kF.Camera;
-	Camera.SetImageSize(kF.aLevels[0].im.size()); //TODO: Has to be invistigated more!!!
+	ATANCamera &Camera = kS.Camera;
+	Camera.SetImageSize(kS.aLevels[0].im.size()); //TODO: Has to be invistigated more!!!
 
 	vector<HomographyMatch> vMatches;
 	for(unsigned int i=0; i<vTrailMatches.size(); i++)
@@ -903,6 +903,7 @@ KeyFrame* MapMaker::ClosestKeyFrame(KeyFrame &k)
 			nClosest = i;
 		}
 	}
+
 	assert(nClosest != -1);
 	return mpMap->vpKeyFrames[nClosest];
 }
