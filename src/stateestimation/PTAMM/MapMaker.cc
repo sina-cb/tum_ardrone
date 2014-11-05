@@ -340,7 +340,7 @@ Vector<3> MapMaker::ReprojectPoint(SE3<> se3AfromB, const Vector<2> &v2A, const 
 
 
 // InitFromStereo() generates the initial match from two keyframes
-// and a vector of image correspondences. Uses the 
+// and a vector of image correspondences. Uses the
 bool MapMaker::InitFromStereo(KeyFrame &kF,
 		KeyFrame &kS,
 		vector<pair<ImageRef, ImageRef> > &vTrailMatches,
@@ -351,7 +351,7 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 	mdWiggleScale = *mgvdWiggleScale; // Cache this for the new map.
 
 	ATANCamera &Camera = kF.Camera;
-
+	Camera.SetImageSize(kF.aLevels[0].im.size()); //TODO: Has to be invistigated more!!!
 
 	vector<HomographyMatch> vMatches;
 	for(unsigned int i=0; i<vTrailMatches.size(); i++)
@@ -545,7 +545,7 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 }
 
 // ThinCandidates() Thins out a key-frame's candidate list.
-// Candidates are those salient corners where the mapmaker will attempt 
+// Candidates are those salient corners where the mapmaker will attempt
 // to make a new map point by epipolar search. We don't want to make new points
 // where there are already existing map points, this routine erases such candidates.
 // Operates on a single level of a keyframe.
@@ -698,7 +698,7 @@ void MapMaker::AddKeyFrameFromTopOfQueue()
  * by searching for that point in another keyframe, and triangulating
  * if a match is found.
  */
-bool MapMaker::AddPointEpipolar(KeyFrame &kSrc, 
+bool MapMaker::AddPointEpipolar(KeyFrame &kSrc,
 		KeyFrame &kTarget,
 		int nLevel,
 		int nCandidate)
@@ -1132,7 +1132,7 @@ void MapMaker::BundleAdjust(set<KeyFrame*> sAdjustSet, set<KeyFrame*> sFixedSet,
 // Mapmaker's try-to-find-a-point-in-a-keyframe code. This is used to update
 // data association if a bad measurement was detected, or if a point
 // was never searched for in a keyframe in the first place. This operates
-// much like the tracker! So most of the code looks just like in 
+// much like the tracker! So most of the code looks just like in
 // TrackerData.h.
 bool MapMaker::ReFind_Common(KeyFrame &k, MapPoint &p)
 {
@@ -1444,5 +1444,5 @@ void MapMaker::GUICommandHandler(string sCommand, string sParams)  // Called by 
 
 	cout << "! MapMaker::GUICommandHandler: unhandled command "<< sCommand << endl;
 	//   exit(1);
-}; 
+};
 
