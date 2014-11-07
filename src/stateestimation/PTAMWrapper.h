@@ -41,6 +41,7 @@ class Predictor;
 class DroneKalmanFilter;
 class DroneFlightModule;
 class EstimationNode;
+class MapSerializer;
 
 typedef TooN::Vector<3> tvec3;
 typedef TooN::SE3<> tse3;
@@ -88,21 +89,22 @@ private:
 	// Map is in my global Coordinate system. keyframes give the front-cam-position, i.e.
 	// CFromW is "GlobalToFront". this is achieved by aligning the global coordinate systems in the very beginning.
 	std::vector<Map*> mvpMaps;                      // The set of maps
-	Map *mpMap; 
-	MapMaker *mpMapMaker; 
-	Tracker *mpTracker; 
+	Map *mpMap;
+	MapMaker *mpMapMaker;
+	Tracker *mpTracker;
 	ATANCamera *mpCamera;
 	Predictor* predConvert;			// used ONLY to convert from rpy to se3 and back, i.e. never kept in some state.
 	Predictor* predIMUOnlyForScale;	// used for scale calculation. needs to be updated with every new navinfo...
+    MapSerializer *mpMapSerializer;                 // The map serializer for saving and loading maps
 
 	double minKFTimeDist;
 	double minKFWiggleDist;
 	double minKFDist;
 
 
-	Predictor* imuOnlyPred;	
+	Predictor* imuOnlyPred;
 	int lastScaleEKFtimestamp;
-	
+
 	bool resetPTAMRequested;
 	enum {UI_NONE = 0, UI_DEBUG = 1, UI_PRES = 2} drawUI;
 
@@ -124,11 +126,11 @@ private:
 	std::deque<ardrone_autonomy::Navdata> navInfoQueue;
 	bool navQueueOverflown;
 	TooN::Vector<3> evalNavQue(unsigned int from, unsigned int to, bool* zCorrupted, bool* allCorrupted, float* out_start_pressure, float* out_end_pressure);
-	
+
 
 	// keep Running
 	bool keepRunning;
-	
+
 	bool lockNextFrame;
 
 	boost::condition_variable  new_frame_signal;
@@ -169,7 +171,7 @@ public:
 	//virtual void on_mouse_move(CVD::ImageRef where, int state);
 	virtual void on_mouse_down(CVD::ImageRef where, int state, int button);
 	//virtual void on_event(int event);
-	
+
 	// resets PTAM tracking
 	inline void Reset() {resetPTAMRequested = true;};
 

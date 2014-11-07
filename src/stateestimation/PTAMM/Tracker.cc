@@ -147,7 +147,7 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 	if(mbDraw)
 	{
 		glDrawPixels(mCurrentKF.aLevels[0].im);
-		if(GV2.GetInt("Tracker.DrawFASTCorners",0, SILENT))
+		if(GV2.GetInt("Tracker.DrawFASTCorners",TRACKER_DRAW_FAST_CORNERS_DEFAULT, SILENT))
 		{
 			glColor3f(1,0,1);  glPointSize(1); glBegin(GL_POINTS);
 			for(unsigned int i=0; i<mCurrentKF.aLevels[0].vCorners.size(); i++)
@@ -163,6 +163,7 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 		{
 			if(mbUseSBIInit)
 				CalcSBIRotation();
+
 			ApplyMotionModel();       //
 			TrackMap();               //  These three lines do the main tracking work.
 			UpdateMotionModel();      //
@@ -190,6 +191,7 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 			}
 
 			// Heuristics to check if a key-frame should be added to the map:
+			/*
 			if(mTrackingQuality == GOOD &&
 					mMapMaker.NeedNewKeyFrame(mCurrentKF) &&
 					mnFrame - mnLastKeyFrameDropped > 20  &&
@@ -198,6 +200,7 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 				mMessageForUser << " Adding key-frame.";
 				AddNewKeyFrame();
 			};
+			*/
 		}
 		else  // what if there is a map, but tracking has been lost?
 		{
@@ -210,7 +213,7 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 			}*/
 		}
 		/*if(mbDraw)
-			RenderGrid();*/
+                RenderGrid();*/
 	}
 	else{ // If there is no map, try to make one.
 		TrackForInitialMap();
@@ -435,7 +438,7 @@ void Tracker::TrackForInitialMap()
 	MiniPatch::mnMaxSSD = *gvnMaxSSD;
 
 	// What stage of initial tracking are we at?
-	if(mnInitialStage == TRAIL_TRACKING_NOT_STARTED) 
+	if(mnInitialStage == TRAIL_TRACKING_NOT_STARTED)
 	{
 		if(mbUserPressedSpacebar)  // First spacebar = this is the first keyframe
 		{
@@ -471,8 +474,9 @@ void Tracker::TrackForInitialMap()
 				vMatches.push_back(pair<ImageRef, ImageRef>(i->irInitialPos,
 						i->irCurrentPos));
 			bool succ = mMapMaker.InitFromStereo(mFirstKF, mCurrentKF, vMatches, mse3CamFromWorld, KFZeroDesiredCamFromWorld, predictedCFromW);  // This will take some time!
-			if(succ)
-				lastStepResult = I_SECOND;
+			if(succ){
+			    lastStepResult = I_SECOND;
+			}
 			else
 				lastStepResult = I_FAILED;
 			mnInitialStage = TRAIL_TRACKING_COMPLETE;
@@ -1066,7 +1070,10 @@ Vector<6> Tracker::CalcPoseUpdate(vector<TrackerData*> vTD, double dOverrideSigm
  */
 void Tracker::ApplyMotionModel()
 {
+
 	mse3StartPos = mse3CamFromWorld;
+
+
 	Vector<6> v6Velocity = mv6CameraVelocity;
 	if(mbUseSBIInit)
 	{

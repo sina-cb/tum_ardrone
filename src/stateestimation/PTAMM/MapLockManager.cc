@@ -54,8 +54,6 @@ bool MapLockManager::IsRegistered( void * t)
 
 }
 
-
-
 /**
  * Threads call this to see if the map is locked
  * @param t checking thread

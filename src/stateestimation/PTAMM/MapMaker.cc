@@ -337,8 +337,6 @@ Vector<3> MapMaker::ReprojectPoint(SE3<> se3AfromB, const Vector<2> &v2A, const 
 	return project(v4Smallest);
 }
 
-
-
 // InitFromStereo() generates the initial match from two keyframes
 // and a vector of image correspondences. Uses the
 bool MapMaker::InitFromStereo(KeyFrame &kF,
@@ -350,8 +348,8 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 {
 	mdWiggleScale = *mgvdWiggleScale; // Cache this for the new map.
 
-	ATANCamera &Camera = kS.Camera;
-	Camera.SetImageSize(kS.aLevels[0].im.size()); //TODO: Has to be invistigated more!!!
+	ATANCamera &Camera = kF.Camera;
+	Camera.SetImageSize(kF.aLevels[0].im.size());
 
 	vector<HomographyMatch> vMatches;
 	for(unsigned int i=0; i<vTrailMatches.size(); i++)

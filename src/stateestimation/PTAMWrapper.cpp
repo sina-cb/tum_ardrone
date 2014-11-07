@@ -25,6 +25,7 @@
 #include "PTAMM/Tracker.h"
 #include "PTAMM/Map.h"
 #include "PTAMM/MapPoint.h"
+#include "PTAMM/MapSerializer.h"
 #include "../HelperFunctions.h"
 #include "Predictor.h"
 #include "DroneKalmanFilter.h"
@@ -79,12 +80,10 @@ void PTAMWrapper::ResetInternal()
 	mimFrameBW.resize(CVD::ImageRef(frameWidth, frameHeight));
 	mimFrameBW_workingCopy.resize(CVD::ImageRef(frameWidth, frameHeight));
 
-
 	if(mpMapMaker != 0) delete mpMapMaker;
 	if(mpMap != 0) delete mpMap;
 	if(mpTracker != 0) delete mpTracker;
 	if(mpCamera != 0) delete mpCamera;
-
 
 	// read camera calibration (yes, its done here)
 	std::string file = node->calibFile;
@@ -93,6 +92,7 @@ void PTAMWrapper::ResetInternal()
 		std::cout << "Waiting for first navdata to determine drone version!" << std::endl;
 		usleep(250000);
 	}
+
 	if(file.size()==0)
 	{
 		if(node->arDroneVersion == 1)
@@ -107,15 +107,23 @@ void PTAMWrapper::ResetInternal()
 	fleH.close();
 	std::cout<< "Set Camera Paramerer to: " << camPar[0] << " " << camPar[1] << " " << camPar[2] << " " << camPar[3] << " " << camPar[4] << std::endl;
 
+    //TODO: Need to check whether it clears everything or not?!!
+    mvpMaps.erase(mvpMaps.begin(), mvpMaps.begin() + mvpMaps.size());
+
 	mpMap = new Map;
-	mpCamera = new ATANCamera(camPar);
-	mpMapMaker = new MapMaker( mvpMaps, mpMap );
-	mpTracker = new Tracker(CVD::ImageRef(frameWidth, frameHeight), *mpCamera, mvpMaps, mpMap, *mpMapMaker);
+    mvpMaps.push_back(mpMap);     //Added from PTAMM System class
+    mpMap->mapLockManager.Register(this);
+
+    mpCamera = new ATANCamera(camPar);
+    mpMapMaker = new MapMaker(mvpMaps, mpMap);
+    mpTracker = new Tracker(CVD::ImageRef(frameWidth, frameHeight), *mpCamera, mvpMaps, mpMap, *mpMapMaker);
+
+    //mpMapSerializer = new MapSerializer(mvpMaps);     //Added from PTAMM System class
 
 	setPTAMPars(minKFTimeDist, minKFWiggleDist, minKFDist);
 
-	predConvert->setPosRPY(0,0,0,0,0,0);
-	predIMUOnlyForScale->setPosRPY(0,0,0,0,0,0);
+	predConvert->setPosRPY(0, 0, 0, 0, 0, 0);
+	predIMUOnlyForScale->setPosRPY(0, 0, 0, 0, 0, 0);
 
 	resetPTAMRequested = false;
 	forceKF = false;
@@ -191,11 +199,11 @@ void PTAMWrapper::run()
 
 	snprintf(charBuf,200,"Video resolution: %d x %d",frameWidth,frameHeight);
 	ROS_INFO(charBuf);
-	node->publishCommand(std::string("u l ")+charBuf);
+	node->publishCommand(std::string("u l ") + charBuf);
 
 	// create window
-	myGLWindow = new GLWindow2(CVD::ImageRef(frameWidth,frameHeight), "PTAM Drone Camera Feed", this);
-	myGLWindow->set_title("PTAM Drone Camera Feed");
+	myGLWindow = new GLWindow2(CVD::ImageRef(frameWidth,frameHeight), "PTAMM Drone Camera Feed", this);
+	myGLWindow->set_title("PTAMM Drone Camera Feed");
 
 	changeSizeNextRender = true;
 	if(frameWidth < 640)
@@ -207,6 +215,8 @@ void PTAMWrapper::run()
 
 	while(keepRunning)
 	{
+        bool bWasLocked = mpMap->mapLockManager.CheckLockAndWait(this, 0);
+
 		if(newImageAvailable)
 		{
 			newImageAvailable = false;
@@ -221,11 +231,6 @@ void PTAMWrapper::run()
 			lock.unlock();
 
 			HandleFrame();
-
-			//TODO: Maps should somehow be handled!
-			/*if (mpMap->vpPoints.size() != 0){
-				mvpMaps.push_back(mpMap);
-			}*/
 
 			if(changeSizeNextRender)
 			{
@@ -253,7 +258,6 @@ void PTAMWrapper::HandleFrame()
 {
 	//printf("tracking Frame at ms=%d (from %d)\n",getMS(ros::Time::now()),mimFrameTime-filter->delayVideo);
 
-
 	// prep data
 	msg = "";
 	ros::Time startedFunc = ros::Time::now();
@@ -266,15 +270,13 @@ void PTAMWrapper::HandleFrame()
 	// --------------------------- ROLL FORWARD TIL FRAME. This is ONLY done here. ---------------------------
 	pthread_mutex_lock( &filter->filter_CS );
 	//filter->predictUpTo(mimFrameTime,true, true);
-	TooN::Vector<10> filterPosePrePTAM = filter->getPoseAtAsVec(mimFrameTime_workingCopy-filter->delayVideo,true);
+	TooN::Vector<10> filterPosePrePTAM = filter->getPoseAtAsVec(mimFrameTime_workingCopy-filter->delayVideo, true);
 	pthread_mutex_unlock( &filter->filter_CS );
 
 	// ------------------------ do PTAM -------------------------
 	myGLWindow->SetupViewport();
 	myGLWindow->SetupVideoOrtho();
 	myGLWindow->SetupVideoRasterPosAndZoom();
-
-
 
 	// 1. transform with filter
 	TooN::Vector<6> PTAMPoseGuess = filter->backTransformPTAMObservation(filterPosePrePTAM.slice<0,6>());
@@ -317,7 +319,7 @@ void PTAMWrapper::HandleFrame()
 	if(mpTracker->lastStepResult == mpTracker->I_SECOND)
 	{
 		PTAMInitializedClock = getMS();
-		filter->setCurrentScales(TooN::makeVector(mpMapMaker->mpMap->initialScaleFactor*1.2,mpMapMaker->mpMap->initialScaleFactor*1.2,mpMapMaker->mpMap->initialScaleFactor*1.2));
+		filter->setCurrentScales(TooN::makeVector(mpMapMaker->mpMap->initialScaleFactor * 1.2, mpMapMaker->mpMap->initialScaleFactor * 1.2, mpMapMaker->mpMap->initialScaleFactor * 1.2));
 		mpMapMaker->mpMap->currentScaleFactor = filter->getCurrentScales()[0];
 		ROS_INFO("PTAM initialized!");
 		ROS_INFO("initial scale: %f\n",mpMapMaker->mpMap->initialScaleFactor*1.2);
