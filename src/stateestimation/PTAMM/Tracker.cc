@@ -17,7 +17,7 @@
 
 #include <fstream>
 #include <fcntl.h>
-
+#include "ros/ros.h"
 #include "settingsCustom.h"
 using namespace CVD;
 using namespace std;
@@ -32,15 +32,15 @@ using namespace GVars3;
  * @param mm map maker
  */
 Tracker::Tracker(ImageRef irVideoSize, const ATANCamera &c, std::vector<Map*> &maps, Map *m, MapMaker &mm) :
-																						  mCurrentKF(c),
-																						  mvpMaps(maps),
-																						  mpMap(m),
-																						  mMapMaker(mm),
-																						  mCamera(c),
-																						  mRelocaliser(maps, mCamera),
-																						  mirSize(irVideoSize),
-																						  mFirstKF(mCamera),
-																						  mPreviousFrameKF(mCamera)
+																								  mCurrentKF(c),
+																								  mvpMaps(maps),
+																								  mpMap(m),
+																								  mMapMaker(mm),
+																								  mCamera(c),
+																								  mRelocaliser(maps, mCamera),
+																								  mirSize(irVideoSize),
+																								  mFirstKF(mCamera),
+																								  mPreviousFrameKF(mCamera)
 {
 	mCurrentKF.bFixed = false;
 	GUI.RegisterCommand("Reset", GUICommandCallBack, this);			//TODO: Check if we need these in the robot or not!
@@ -117,6 +117,7 @@ void Tracker::Reset()
 // or not (it should not draw, for example, when AR stuff is being shown.)
 void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 {
+	ROS_DEBUG("Track Frame");
 	mbDraw = bDraw;
 	mMessageForUser.str("");   // Wipe the user message clean
 
@@ -129,14 +130,14 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 	static gvar3<double> gvdSBIBlur("Tracker.RotationEstimatorBlur", TRACKER_ROTATION_ESTIMATOR_BLUR, SILENT);
 	static gvar3<int> gvnUseSBI("Tracker.UseRotationEstimator", 1, SILENT);
 	mbUseSBIInit = *gvnUseSBI;
-	if(!mpSBIThisFrame)
+	if (!mpSBIThisFrame)
 	{
 		mpSBIThisFrame = new SmallBlurryImage(mCurrentKF, *gvdSBIBlur);
 		mpSBILastFrame = new SmallBlurryImage(mCurrentKF, *gvdSBIBlur);
 	}
 	else
 	{
-		delete  mpSBILastFrame;
+		delete mpSBILastFrame;
 		mpSBILastFrame = mpSBIThisFrame;
 		mpSBIThisFrame = new SmallBlurryImage(mCurrentKF, *gvdSBIBlur);
 	}
@@ -144,7 +145,7 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 	// From now on we only use the keyframe struct!
 	mnFrame++;
 
-	if(mbDraw)
+	if (mbDraw)
 	{
 		glDrawPixels(mCurrentKF.aLevels[0].im);
 		if(GV2.GetInt("Tracker.DrawFASTCorners",TRACKER_DRAW_FAST_CORNERS_DEFAULT, SILENT))
@@ -159,8 +160,10 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 	// Decide what to do - if there is a map, try to track the map ...
 	if(mpMap->IsGood())
 	{
+		ROS_DEBUG("Map still GOOD!");
 		if(mnLostFrames < NUM_LOST_FRAMES)  // .. but only if we're not lost!
 		{
+			ROS_DEBUG("Not Lost, YET!");
 			if(mbUseSBIInit)
 				CalcSBIRotation();
 
@@ -190,20 +193,11 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 						<< mpMap->vpPoints.size() << "P, " << mpMap->vpKeyFrames.size() << "KF";
 			}
 
-			// Heuristics to check if a key-frame should be added to the map:
-			/*
-			if(mTrackingQuality == GOOD &&
-					mMapMaker.NeedNewKeyFrame(mCurrentKF) &&
-					mnFrame - mnLastKeyFrameDropped > 20  &&
-					mpMap->QueueSize() < 3)
-			{
-				mMessageForUser << " Adding key-frame.";
-				AddNewKeyFrame();
-			};
-			*/
+			ROS_DEBUG("Not Lost, End of Block!");
 		}
 		else  // what if there is a map, but tracking has been lost?
 		{
+			ROS_DEBUG("have NO recovery for now!!!");
 			tryToRecover();
 			/*mMessageForUser << "** Attempting recovery **.";
 			if(AttemptRecovery())
@@ -216,15 +210,18 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
                 RenderGrid();*/
 	}
 	else{ // If there is no map, try to make one.
+		ROS_DEBUG("Track for new Map!");
 		TrackForInitialMap();
+		ROS_DEBUG("FINISH TRACKING!");
 	}
 
 	// GUI interface
-	while(!mvQueuedCommands.empty())
+	/*while(!mvQueuedCommands.empty())
 	{
 		GUICommandHandler(mvQueuedCommands.begin()->sCommand, mvQueuedCommands.begin()->sParams);
 		mvQueuedCommands.erase(mvQueuedCommands.begin());
-	}
+	}*/
+	ROS_DEBUG("Track Frame - END");
 };
 
 void Tracker::TakeKF(bool force)
@@ -433,6 +430,7 @@ bool Tracker::HandleKeyPress( string sKey )
  */
 void Tracker::TrackForInitialMap()
 {
+	ROS_ERROR("Track For initial map : START");
 	// MiniPatch tracking threshhold.
 	static gvar3<int> gvnMaxSSD("Tracker.MiniPatchMaxSSD", TRACKER_MINIPATCH_MAX_SSD_DEFAULT, SILENT);
 	MiniPatch::mnMaxSSD = *gvnMaxSSD;
@@ -471,11 +469,10 @@ void Tracker::TrackForInitialMap()
 			mbUserPressedSpacebar = false;
 			vector<pair<ImageRef, ImageRef> > vMatches;   // This is the format the mapmaker wants for the stereo pairs
 			for(list<Trail>::iterator i = mlTrails.begin(); i!=mlTrails.end(); i++)
-				vMatches.push_back(pair<ImageRef, ImageRef>(i->irInitialPos,
-						i->irCurrentPos));
+				vMatches.push_back(pair<ImageRef, ImageRef>(i->irInitialPos, i->irCurrentPos));
 			bool succ = mMapMaker.InitFromStereo(mFirstKF, mCurrentKF, vMatches, mse3CamFromWorld, KFZeroDesiredCamFromWorld, predictedCFromW);  // This will take some time!
 			if(succ){
-			    lastStepResult = I_SECOND;
+				lastStepResult = I_SECOND;
 			}
 			else
 				lastStepResult = I_FAILED;
@@ -486,6 +483,7 @@ void Tracker::TrackForInitialMap()
 			mMessageForUser << "Translate the camera slowly sideways, and press spacebar again to perform stereo init.";
 		}
 	}
+	ROS_ERROR("Track For initial map : END");
 }
 
 /**

@@ -309,7 +309,6 @@ void PTAMWrapper::HandleFrame()
 	// 3. transform with filter
 	TooN::Vector<6> PTAMResultTransformed = filter->transformPTAMObservation(PTAMResult);
 
-
 	// init failed?
 	if(mpTracker->lastStepResult == mpTracker->I_FAILED)
 	{
@@ -339,7 +338,6 @@ void PTAMWrapper::HandleFrame()
 	// calculate absolute differences.
 	TooN::Vector<6> diffs = PTAMResultTransformed - filterPosePrePTAM.slice<0,6>();
 	for(int i=0;1<1;i++) diffs[i] = abs(diffs[i]);
-
 
 	if(filter->getNumGoodPTAMObservations() < 10 && mpMap->IsGood())
 	{

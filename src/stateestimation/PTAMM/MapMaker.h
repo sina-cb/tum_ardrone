@@ -103,7 +103,7 @@ protected:
 	void HandleBadPoints();
 	double DistToNearestKeyFrame(KeyFrame &kCurrent);
 	double KeyFrameLinearDist(KeyFrame &k1, KeyFrame &k2);
-	KeyFrame* ClosestKeyFrame(KeyFrame &k);
+	KeyFrame* ClosestKeyFrame(KeyFrame &k, int a);
 	std::vector<KeyFrame*> NClosestKeyFrames(KeyFrame &k, unsigned int N);
 	void RefreshSceneDepth(KeyFrame *pKF);
 

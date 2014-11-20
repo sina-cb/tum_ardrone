@@ -20,6 +20,7 @@
 
 #include "EstimationNode.h"
 #include "ros/ros.h"
+#include <ros/console.h>
 #include "PTAMWrapper.h"
 #include "MapView.h"
 
@@ -31,6 +32,10 @@ unsigned int ros_header_timestamp_base = 0;
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "drone_stateestimation");
+
+	if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) ) {
+	   ros::console::notifyLoggerLevelsChanged();
+	}
 
 	ROS_INFO("Started TUM ArDrone Stateestimation Node.");
 
