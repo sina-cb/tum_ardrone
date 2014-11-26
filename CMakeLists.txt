@@ -92,6 +92,7 @@ set(STATEESTIMATION_SOURCE_FILES
   src/stateestimation/PTAMM/Relocaliser.cc
   src/stateestimation/PTAMM/ShiTomasi.cc
   src/stateestimation/PTAMM/SmallBlurryImage.cc
+  src/stateestimation/PTAMM/MapSerializer.cc
   src/stateestimation/PTAMM/Tracker.cc
   src/stateestimation/PTAMM/MapLockManager.cc
   src/stateestimation/PTAMM/tinyxml.cc
@@ -129,6 +130,7 @@ set(STATEESTIMATION_HEADER_FILES
   src/stateestimation/PTAMM/settingsCustom.h
   src/stateestimation/PTAMM/ShiTomasi.h
   src/stateestimation/PTAMM/SmallBlurryImage.h
+  src/stateestimation/PTAMM/MapSerializer.h
   src/stateestimation/PTAMM/SmallMatrixOpts.h
   src/stateestimation/PTAMM/TrackerData.h
   src/stateestimation/PTAMM/Tracker.h

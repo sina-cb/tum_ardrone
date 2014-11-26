@@ -17,7 +17,6 @@
 #include <gvars3/instances.h>
 #include <fstream>
 #include <algorithm>
-
 #include "ros/ros.h"
 #include "settingsCustom.h"
 
@@ -195,8 +194,8 @@ void MapMaker::run()
 
 		CKECK_ABORTS;
 		// Any new key-frames to be added?
-		if(mpMap->QueueSize() > 0)
-			AddKeyFrameFromTopOfQueue(); // Integrate into map data struct, and process
+		/*if	(mpMap->QueueSize() > 0)
+			AddKeyFrameFromTopOfQueue(); // Integrate into map data struct, and process*/
 	}
 }
 
@@ -348,10 +347,9 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 		SE3<> KFZeroDesiredCamFromWorld,
 		SE3<> KFOneDesiredCamFromWorld)
 {
-	ROS_ERROR("Init From Stereo : START");
 	mdWiggleScale = *mgvdWiggleScale; // Cache this for the new map.
 
-	ATANCamera &Camera = kF.Camera;
+	ATANCamera &Camera = kS.Camera;
 	Camera.SetImageSize(kF.aLevels[0].im.size());
 
 	vector<HomographyMatch> vMatches;
@@ -542,7 +540,6 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 	else
 		printf(", angle: %.1f\n",angle);
 
-	ROS_ERROR("Init From Stereo : END");
 	return true;
 }
 
@@ -592,10 +589,7 @@ void MapMaker::ThinCandidates(KeyFrame &k, int nLevel)
 void MapMaker::AddSomeMapPoints(int nLevel)
 {
 	KeyFrame &kSrc = *(mpMap->vpKeyFrames[mpMap->vpKeyFrames.size() - 1]); // The new keyframe
-	//HERE
-	ROS_DEBUG("MapMaker::AddSomeMapPoints::START");
 	KeyFrame &kTarget = *(ClosestKeyFrame(kSrc, 1));
-	ROS_DEBUG("MapMaker::AddSomeMapPoints::END");
 	Level &l = kSrc.aLevels[nLevel];
 
 	ThinCandidates(kSrc, nLevel);
@@ -915,20 +909,14 @@ KeyFrame* MapMaker::ClosestKeyFrame(KeyFrame &k, int a)
 
 double MapMaker::DistToNearestKeyFrame(KeyFrame &kCurrent)
 {
-	//HERE
-	ROS_DEBUG("MapMaker::DistToNearestKeyFrame::START");
 	KeyFrame *pClosest = ClosestKeyFrame(kCurrent, 1);
-	ROS_DEBUG("MapMaker::DistToNearestKeyFrame::END");
 	double dDist = KeyFrameLinearDist(kCurrent, *pClosest);
 	return dDist;
 }
 
 bool MapMaker::NeedNewKeyFrame(KeyFrame &kCurrent)
 {
-	//HERE
-	ROS_DEBUG("MapMaker::NeedNewKeyFrame::START");
 	KeyFrame *pClosest = ClosestKeyFrame(kCurrent, 1);
-	ROS_DEBUG("MapMaker::NeedNewKeyFrame::END");
 	double dDist = KeyFrameLinearDist(kCurrent, *pClosest);	// distance in PTAMS system.
 	mpMap->lastMetricDist = dDist * mpMap->currentScaleFactor;
 	mpMap->lastWiggleDist = dDist / kCurrent.dSceneDepthMean;

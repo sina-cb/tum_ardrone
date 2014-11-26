@@ -15,6 +15,7 @@
 #include "SmallBlurryImage.h"
 #include <cvd/utility.h>
 #include <gvars3/instances.h>
+#include "ros/ros.h"
 
 using namespace CVD;
 using namespace std;
@@ -86,6 +87,8 @@ bool Relocaliser::AttemptRecovery(Map & currentMap, KeyFrame &kCurrent)
 			//switch
 			ostringstream os;
 			os << "SwitchMap " << mpBestMap->MapID();
+			ROS_ERROR("Trying to call GUI PARSE LINE in Relocaliser.cc");
+			exit(-1);
 			GUI.ParseLine(os.str());
 			//remain lost until switch complete
 			return false;

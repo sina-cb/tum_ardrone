@@ -32,27 +32,27 @@ using namespace GVars3;
  * @param mm map maker
  */
 Tracker::Tracker(ImageRef irVideoSize, const ATANCamera &c, std::vector<Map*> &maps, Map *m, MapMaker &mm) :
-																								  mCurrentKF(c),
-																								  mvpMaps(maps),
-																								  mpMap(m),
-																								  mMapMaker(mm),
-																								  mCamera(c),
-																								  mRelocaliser(maps, mCamera),
-																								  mirSize(irVideoSize),
-																								  mFirstKF(mCamera),
-																								  mPreviousFrameKF(mCamera)
+																												  mCurrentKF(c),
+																												  mvpMaps(maps),
+																												  mpMap(m),
+																												  mMapMaker(mm),
+																												  mCamera(c),
+																												  mRelocaliser(maps, mCamera),
+																												  mirSize(irVideoSize),
+																												  mFirstKF(mCamera),
+																												  mPreviousFrameKF(mCamera)
 {
 	mCurrentKF.bFixed = false;
-	GUI.RegisterCommand("Reset", GUICommandCallBack, this);			//TODO: Check if we need these in the robot or not!
+	//  GUI.RegisterCommand("Reset", GUICommandCallBack, this);			//TODO: Check if we need these in the robot or not!
 	//  GUI.RegisterCommand("KeyPress", GUICommandCallBack, this);
-	GUI.RegisterCommand("PokeTracker", GUICommandCallBack, this);	//TODO: Check if we need these in the robot or not!
+	//  GUI.RegisterCommand("PokeTracker", GUICommandCallBack, this);	//TODO: Check if we need these in the robot or not!
 	TrackerData::irImageSize = mirSize;
 
 	mpSBILastFrame = NULL;
 	mpSBIThisFrame = NULL;
 	mnLastKeyFrameDroppedClock = 0;
 
-	mRelocaliser.mpBestMap = mpMap;
+	//mRelocaliser.mpBestMap = mpMap; //TODO: Can be uncomented
 
 	// Most of the initialisation is done in Reset()
 	Reset();
@@ -75,11 +75,11 @@ void Tracker::ResetCommon()
 	mCamera.SetImageSize(mirSize);
 	mCurrentKF.mMeasurements.clear();
 	mnLastKeyFrameDropped = -20;
-	mnLastKeyFrameDroppedClock = 0;	//TODO: Added from TUM_ARDRONE
+	mnLastKeyFrameDroppedClock = 0;
 	mnFrame=0;
 	mv6CameraVelocity = Zeros;
 	mbJustRecoveredSoUseCoarse = false;
-	predictedCFromW = SE3<>();		//TODO: Added from TUM_ARDRONE
+	predictedCFromW = SE3<>();
 
 }
 
@@ -104,11 +104,7 @@ void Tracker::Reset()
 	// MapMaker will also clear the map.
 	mMapMaker.RequestReset();
 	while(!mMapMaker.ResetDone())
-#ifndef WIN32
 		usleep(10);
-#else
-	Sleep(1);
-#endif
 }
 
 // TrackFrame is called by System.cc with each incoming video frame.
@@ -117,7 +113,6 @@ void Tracker::Reset()
 // or not (it should not draw, for example, when AR stuff is being shown.)
 void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 {
-	ROS_DEBUG("Track Frame");
 	mbDraw = bDraw;
 	mMessageForUser.str("");   // Wipe the user message clean
 
@@ -160,10 +155,8 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 	// Decide what to do - if there is a map, try to track the map ...
 	if(mpMap->IsGood())
 	{
-		ROS_DEBUG("Map still GOOD!");
 		if(mnLostFrames < NUM_LOST_FRAMES)  // .. but only if we're not lost!
 		{
-			ROS_DEBUG("Not Lost, YET!");
 			if(mbUseSBIInit)
 				CalcSBIRotation();
 
@@ -193,36 +186,58 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 						<< mpMap->vpPoints.size() << "P, " << mpMap->vpKeyFrames.size() << "KF";
 			}
 
-			ROS_DEBUG("Not Lost, End of Block!");
+			/*/ Heuristics to check if a key-frame should be added to the map:
+			  if(mTrackingQuality == GOOD && (forceKF || (
+				 mMapMaker.NeedNewKeyFrame(mCurrentKF) &&
+				 mnFrame - mnLastKeyFrameDropped > FRAMES_BETWEEN_KEYFRAMES  &&
+				 mMapMaker.QueueSize() < 3)))
+				{
+				  mMessageForUser << " Adding key-frame.";
+				  AddNewKeyFrame();
+				  forceKF = false;
+				};*/
+
 		}
 		else  // what if there is a map, but tracking has been lost?
 		{
-			ROS_DEBUG("have NO recovery for now!!!");
 			tryToRecover();
-			/*mMessageForUser << "** Attempting recovery **.";
-			if(AttemptRecovery())
-			{
-				TrackMap();
-				AssessTrackingQuality();
-			}*/
 		}
-		/*if(mbDraw)
-                RenderGrid();*/
 	}
 	else{ // If there is no map, try to make one.
-		ROS_DEBUG("Track for new Map!");
 		TrackForInitialMap();
-		ROS_DEBUG("FINISH TRACKING!");
 	}
 
 	// GUI interface
-	/*while(!mvQueuedCommands.empty())
+	while(!mvQueuedCommands.empty())
 	{
+		ROS_DEBUG("Pending commands!");
 		GUICommandHandler(mvQueuedCommands.begin()->sCommand, mvQueuedCommands.begin()->sParams);
 		mvQueuedCommands.erase(mvQueuedCommands.begin());
-	}*/
-	ROS_DEBUG("Track Frame - END");
+	}
 };
+
+void Tracker::tryToRecover()
+{
+	if(mpMap->IsGood())
+	{
+		mMessageForUser.str("");
+		mMessageForUser << "** Attempting recovery **.";
+		if(AttemptRecovery())
+		{
+			TrackMap();
+			AssessTrackingQuality();
+
+			if(mTrackingQuality == GOOD)
+				lastStepResult = T_RECOVERED_GOOD;
+			if(mTrackingQuality == DODGY)
+				lastStepResult = T_RECOVERED_DODGY;
+			if(mTrackingQuality == BAD)
+				lastStepResult = T_LOST;
+		}
+		else
+			lastStepResult = T_LOST;
+	}
+}
 
 void Tracker::TakeKF(bool force)
 {
@@ -252,27 +267,7 @@ void Tracker::TakeKF(bool force)
  */
 bool Tracker::AttemptRecovery()
 {
-	if(true)
-	{
-		bool bRelocGood = mRelocaliser.AttemptRecovery(*mpMap, mCurrentKF);		//TODO: I added the mpMap pointer as the current map
-		if(!bRelocGood)
-			return false;
-
-		SE3<> se3Best = mRelocaliser.BestPose();
-		mse3CamFromWorld = mse3StartPos = se3Best;
-		mv6CameraVelocity = Zeros;
-		mbJustRecoveredSoUseCoarse = true;
-		return true;
-	}
-	else
-	{
-		SE3<> se3Best = predictedCFromW;
-		mse3CamFromWorld = mse3StartPos = se3Best;
-		mv6CameraVelocity = Zeros;
-		mbJustRecoveredSoUseCoarse = true;
-		return true;
-	}
-	/*bool bRelocGood = mRelocaliser.AttemptRecovery( *mpMap, mCurrentKF );
+	bool bRelocGood = mRelocaliser.AttemptRecovery(*mpMap, mCurrentKF);		//TODO: I added the mpMap pointer as the current map
 	if(!bRelocGood)
 		return false;
 
@@ -280,81 +275,8 @@ bool Tracker::AttemptRecovery()
 	mse3CamFromWorld = mse3StartPos = se3Best;
 	mv6CameraVelocity = Zeros;
 	mbJustRecoveredSoUseCoarse = true;
-	return true;*/
+	return true;
 }
-
-void Tracker::tryToRecover()
-{
-	if(mpMap->IsGood())
-	{
-		mMessageForUser.str("");
-		mMessageForUser << "** Attempting recovery **.";
-		if(AttemptRecovery())
-		{
-			TrackMap();
-			AssessTrackingQuality();
-
-			if(mTrackingQuality == GOOD)
-				lastStepResult = T_RECOVERED_GOOD;
-			if(mTrackingQuality == DODGY)
-				lastStepResult = T_RECOVERED_DODGY;
-			if(mTrackingQuality == BAD)
-				lastStepResult = T_LOST;
-		}
-		else
-			lastStepResult = T_LOST;
-	}
-}
-
-/**
- * Draw the reference grid to give the user an idea of wether tracking is OK or not.
- */
-void Tracker::RenderGrid()
-{
-	// The colour of the ref grid shows if the coarse stage of tracking was used
-	// (it's turned off when the camera is sitting still to reduce jitter.)
-	if(mbDidCoarse)
-		glColor4f(0.0f, 0.5f, 0.0f, 0.6f);
-	else
-		glColor4f(0.0f,0.0f,0.0f,0.6f);
-
-	// The grid is projected manually, i.e. GL receives projected 2D coords to draw.
-	int nHalfCells = 8;
-	int nTot = nHalfCells * 2 + 1;
-	Image<Vector<2> >  imVertices(ImageRef(nTot,nTot));
-	for(int i=0; i<nTot; i++)
-		for(int j=0; j<nTot; j++)
-		{
-			Vector<3> v3;
-			v3[0] = (i - nHalfCells) * 0.1;
-			v3[1] = (j - nHalfCells) * 0.1;
-			v3[2] = 0.0;
-			Vector<3> v3Cam = mse3CamFromWorld * v3;
-			if(v3Cam[2] < 0.001)
-				v3Cam[2] = 0.001;
-			imVertices[i][j] = mCamera.Project(project(v3Cam));
-		}
-	glEnable(GL_LINE_SMOOTH);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glLineWidth(2);
-	for(int i=0; i<nTot; i++)
-	{
-		glBegin(GL_LINE_STRIP);
-		for(int j=0; j<nTot; j++)
-			glVertex(imVertices[i][j]);
-		glEnd();
-
-		glBegin(GL_LINE_STRIP);
-		for(int j=0; j<nTot; j++)
-			glVertex(imVertices[j][i]);
-		glEnd();
-	};
-
-	glLineWidth(1);
-	glColor3f(1,0,0);
-}
-
 
 /**
  * GUI interface. Stuff commands onto the back of a queue so the tracker handles
@@ -385,7 +307,25 @@ void Tracker::GUICommandHandler(string sCommand, string sParams)  // Called by t
 		Reset();
 		return;
 	}
-	else if((sCommand=="PokeTracker"))
+
+	// KeyPress commands are issued by GLWindow
+	if(sCommand=="KeyPress")
+	{
+		if(sParams == "Space")
+		{
+			mbUserPressedSpacebar = true;
+		}
+		else if(sParams == "r")
+		{
+			Reset();
+		}
+		else if(sParams == "q" || sParams == "Escape")
+		{
+			GUI.ParseLine("quit");
+		}
+		return;
+	}
+	if((sCommand=="PokeTracker"))
 	{
 		mbUserPressedSpacebar = true;
 		return;
@@ -430,7 +370,6 @@ bool Tracker::HandleKeyPress( string sKey )
  */
 void Tracker::TrackForInitialMap()
 {
-	ROS_ERROR("Track For initial map : START");
 	// MiniPatch tracking threshhold.
 	static gvar3<int> gvnMaxSSD("Tracker.MiniPatchMaxSSD", TRACKER_MINIPATCH_MAX_SSD_DEFAULT, SILENT);
 	MiniPatch::mnMaxSSD = *gvnMaxSSD;
@@ -483,7 +422,6 @@ void Tracker::TrackForInitialMap()
 			mMessageForUser << "Translate the camera slowly sideways, and press spacebar again to perform stereo init.";
 		}
 	}
-	ROS_ERROR("Track For initial map : END");
 }
 
 /**
@@ -766,6 +704,8 @@ void Tracker::TrackMap()
 	// ourselves to 1000, and choose these randomly.
 	static gvar3<int> gvnMaxPatchesPerFrame("Tracker.MaxPatchesPerFrame", TRACKER_MAX_PATCHES_PER_FRAME_DEFAULT, SILENT);
 	int nFinePatchesToUse = *gvnMaxPatchesPerFrame - static_cast<int>(vIterationSet.size());
+	if(nFinePatchesToUse < 0)
+		nFinePatchesToUse = 0;
 	if((int) vNextToSearch.size() > nFinePatchesToUse)
 	{
 		random_shuffle(vNextToSearch.begin(), vNextToSearch.end());
@@ -1244,9 +1184,5 @@ void Tracker::SetNewMap(Map * map)
 	mpMap = map;
 }
 
-
-
-
 ImageRef TrackerData::irImageSize;  // Static member of TrackerData lives here
-
 

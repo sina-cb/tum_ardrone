@@ -32,6 +32,7 @@
 #include "cvd/byte.h"
 #include "MouseKeyHandler.h"
 #include "boost/thread.hpp"
+#include <gvars3/instances.h>
 
 class Map;
 class MapMaker;
@@ -127,7 +128,10 @@ private:
 	bool navQueueOverflown;
 	TooN::Vector<3> evalNavQue(unsigned int from, unsigned int to, bool* zCorrupted, bool* allCorrupted, float* out_start_pressure, float* out_end_pressure);
 
-
+	void InitForTheFirstTime();
+	bool SwitchMap( int nMapNum, bool bForce = false );                                    // Switch to a particular map.
+	bool DeleteMap( int nMapNum );                  // Delete a specified map
+	bool mgvnLockMap;                 // Stop a map being edited - i.e. keyframes added, points updated
 	// keep Running
 	bool keepRunning;
 
@@ -137,7 +141,7 @@ private:
 	boost::mutex new_frame_signal_mutex;
 
 
-	// resets PTAM tracking
+	// resets PTAMM tracking
 	void ResetInternal();
 
 	void renderGrid(TooN::SE3<> camFromWorld);
@@ -179,8 +183,6 @@ public:
 	// start and stop system and respective thread.
 	void startSystem();
 	void stopSystem();
-
-
 
 	enum {PTAM_IDLE = 0, PTAM_INITIALIZING = 1, PTAM_LOST = 2, PTAM_GOOD = 3, PTAM_BEST = 4, PTAM_TOOKKF = 5, PTAM_FALSEPOSITIVE = 6} PTAMStatus;
 	TooN::SE3<> lastPTAMResultRaw;

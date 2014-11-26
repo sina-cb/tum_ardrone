@@ -17,9 +17,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with tum_ardrone.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
- 
- 
+
 #include "Predictor.h"
 #include "../HelperFunctions.h"
 
@@ -32,15 +30,12 @@ const TooN::SE3<double> Predictor::frontToDrone = Predictor::droneToFront.invers
 const TooN::SE3<double> Predictor::droneToFrontNT = TooN::SE3<double>(TooN::SO3<double>(TooN::makeVector(3.14159265/2,0,0)),TooN::makeVector(0,0,0));
 const TooN::SE3<double> Predictor::frontToDroneNT = Predictor::droneToFrontNT.inverse();
 
-
 // load distortion matrices
 Predictor::Predictor(std::string basePath)
 {
-
 	setPosRPY(0,0,0,0,0,0);
 	lastAddedDronetime = 0;
 }
-
 
 Predictor::~Predictor(void)
 {
@@ -53,7 +48,6 @@ void Predictor::calcCombinedTransformations()
 	frontToGlobal = globalToFront.inverse();
 	bottmoToGlobal = globalToBottom.inverse();
 }
-
 
 // input in rpy
 void Predictor::setPosRPY(double newX, double newY, double newZ, double newRoll, double newPitch, double newYaw)
@@ -90,6 +84,7 @@ void Predictor::setPosSE3_globalToDrone(TooN::SE3<double> newGlobaltoDrone)
 	// set rest
 	calcCombinedTransformations();
 }
+
 void Predictor::setPosSE3_droneToGlobal(TooN::SE3<double> newDroneToGlobal)
 {
 	droneToGlobal = newDroneToGlobal;
@@ -103,7 +98,6 @@ void Predictor::setPosSE3_droneToGlobal(TooN::SE3<double> newDroneToGlobal)
 
 	calcCombinedTransformations();
 }
-
 
 // watch out: does NOT update any matrices, only (x,y,z,r,p,y)!!!!!!!
 // also: does not filter z-data, only sets corrupted-flag...
@@ -139,6 +133,7 @@ void Predictor::predictOneStep(ardrone_autonomy::Navdata* nfo)
 	yaw = nfo->rotZ/1000.0;
 
 }
+
 void Predictor::resetPos()
 {
 	zCorrupted = false;

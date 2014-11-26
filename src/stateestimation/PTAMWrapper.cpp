@@ -73,17 +73,59 @@ PTAMWrapper::PTAMWrapper(DroneKalmanFilter* f, EstimationNode* nde)
 	maxKF = 60;
 
 	logfileScalePairs = 0;
+
+	mgvnLockMap = false;
 }
 
 void PTAMWrapper::ResetInternal()
 {
+	//move all maps to first map.
+	if( mpMap != mvpMaps.front() )
+	{
+		if( !SwitchMap( mvpMaps.front()->MapID(), true ) ) {
+			ROS_ERROR("Reset All: Failed to switch to first map");
+		}
+	}
+	mpMap->bEditLocked = false;
+
+	//reset map.
+	mpTracker->Reset();
+
+	//lock and delete all remaining maps
+	while( mvpMaps.size() > 1 )
+	{
+		DeleteMap( mvpMaps.back()->MapID() );
+	}
+
+	setPTAMPars(minKFTimeDist, minKFWiggleDist, minKFDist);
+
+	predConvert->setPosRPY(0, 0, 0, 0, 0, 0);
+	predIMUOnlyForScale->setPosRPY(0, 0, 0, 0, 0, 0);
+
+	resetPTAMRequested = false;
+	forceKF = false;
+	isGoodCount = 0;
+	lastAnimSentClock = 0;
+	lockNextFrame = false;
+	PTAMInitializedClock = 0;
+	lastPTAMMessage = "";
+
+	flushMapKeypoints = false;
+
+	node->publishCommand("u l PTAMM has been reset.");
+}
+
+void PTAMWrapper::InitForTheFirstTime(){
+	//From Reset Internals
 	mimFrameBW.resize(CVD::ImageRef(frameWidth, frameHeight));
 	mimFrameBW_workingCopy.resize(CVD::ImageRef(frameWidth, frameHeight));
+
 
 	if(mpMapMaker != 0) delete mpMapMaker;
 	if(mpMap != 0) delete mpMap;
 	if(mpTracker != 0) delete mpTracker;
 	if(mpCamera != 0) delete mpCamera;
+
 
 	// read camera calibration (yes, its done here)
 	std::string file = node->calibFile;
@@ -107,35 +149,128 @@ void PTAMWrapper::ResetInternal()
 	fleH.close();
 	std::cout<< "Set Camera Paramerer to: " << camPar[0] << " " << camPar[1] << " " << camPar[2] << " " << camPar[3] << " " << camPar[4] << std::endl;
 
-    //TODO: Need to check whether it clears everything or not?!!
-    mvpMaps.erase(mvpMaps.begin(), mvpMaps.begin() + mvpMaps.size());
-
 	mpMap = new Map;
-    mvpMaps.push_back(mpMap);     //Added from PTAMM System class
-    mpMap->mapLockManager.Register(this);
+	mvpMaps.push_back(mpMap);     //Added from PTAMM System class
+	mpMap->mapLockManager.Register(this);
 
-    mpCamera = new ATANCamera(camPar);
-    mpMapMaker = new MapMaker(mvpMaps, mpMap);
-    mpTracker = new Tracker(CVD::ImageRef(frameWidth, frameHeight), *mpCamera, mvpMaps, mpMap, *mpMapMaker);
+	mpCamera = new ATANCamera(camPar);
+	mpMapMaker = new MapMaker(mvpMaps, mpMap);
+	mpTracker = new Tracker(CVD::ImageRef(frameWidth, frameHeight), *mpCamera, mvpMaps, mpMap, *mpMapMaker);
+	mpMapSerializer = new MapSerializer(mvpMaps);     //Added from PTAMM System class
+	//UP HERE
 
-    //mpMapSerializer = new MapSerializer(mvpMaps);     //Added from PTAMM System class
 
-	setPTAMPars(minKFTimeDist, minKFWiggleDist, minKFDist);
+}
 
-	predConvert->setPosRPY(0, 0, 0, 0, 0, 0);
-	predIMUOnlyForScale->setPosRPY(0, 0, 0, 0, 0, 0);
+bool PTAMWrapper::SwitchMap( int nMapNum, bool bForce ){
+	//same map, do nothing. This should not actually occur
+	if(mpMap->MapID() == nMapNum) {
+		return true;
+	}
 
-	resetPTAMRequested = false;
-	forceKF = false;
-	isGoodCount = 0;
-	lastAnimSentClock = 0;
-	lockNextFrame = false;
-	PTAMInitializedClock = 0;
-	lastPTAMMessage = "";
+	if( (nMapNum < 0) )
+	{
+		ROS_ERROR("Invalid map number");
+		return false;
+	}
 
-	flushMapKeypoints = false;
 
-	node->publishCommand("u l PTAM has been reset.");
+	for( size_t ii = 0; ii < mvpMaps.size(); ii++ )
+	{
+		Map * pcMap = mvpMaps[ ii ];
+		if( pcMap->MapID() == nMapNum ) {
+			mpMap->mapLockManager.UnRegister( this );
+			mpMap = pcMap;
+			mpMap->mapLockManager.Register( this );
+		}
+	}
+
+	if(mpMap->MapID() != nMapNum)
+	{
+		ROS_ERROR("Failed to switch");
+		return false;
+	}
+
+	/*  Map was found and switched to for system.
+	      Now update the rest of the system.
+	      Order is important. Do not want keyframes added or
+	      points deleted from the wrong map.
+
+	      MapMaker is in its own thread.
+	      System,Tracker, and MapViewer are all in this thread.
+	 */
+
+	mgvnLockMap = mpMap->bEditLocked;
+
+
+	//update the map maker thread
+	if( !mpMapMaker->RequestSwitch( mpMap ) ) {
+		return false;
+	}
+
+	while( !mpMapMaker->SwitchDone() ) {
+		usleep(10);
+	}
+
+	//update the map viewer object
+	//mpMapViewer->SwitchMap(mpMap, bForce); //TODO: Check this
+
+	//update the tracker object
+	//   mpARDriver->Reset();
+	//mpARDriver->SetCurrentMap( *mpMap ); //TODO: Check this
+
+	if( !mpTracker->SwitchMap( mpMap ) ) {
+		return false;
+	}
+
+	return true;
+}
+
+bool PTAMWrapper::DeleteMap( int nMapNum ){
+	if( mvpMaps.size() <= 1 )
+	{
+		ROS_INFO("Cannot delete the only map. Use Reset instead.");
+		return false;
+	}
+
+	//if the specified map is the current map, move threads to another map
+	if( nMapNum == mpMap->MapID() )
+	{
+		int nNewMap = -1;
+
+		if( mpMap == mvpMaps.front() ) {
+			nNewMap = mvpMaps.back()->MapID();
+		}
+		else {
+			nNewMap = mvpMaps.front()->MapID();
+		}
+
+		// move the current map users elsewhere
+		if( !SwitchMap( nNewMap, true ) ) {
+			ROS_ERROR("Delete Map: Failed to move threads to another map.");
+			return false;
+		}
+	}
+
+
+
+	// find and delete the map
+	for( size_t ii = 0; ii < mvpMaps.size(); ii++ )
+	{
+		Map * pDelMap = mvpMaps[ ii ];
+		if( pDelMap->MapID() == nMapNum ) {
+
+			pDelMap->mapLockManager.Register( this );
+			pDelMap->mapLockManager.LockMap( this );
+			delete pDelMap;
+			mvpMaps.erase( mvpMaps.begin() + ii );
+
+			///@TODO Possible bug. If another thread (eg serialization) was using this
+			/// and waiting for unlock, would become stuck or seg fault.
+		}
+	}
+
+	return true;
 }
 
 void PTAMWrapper::setPTAMPars(double minKFTimeDist, double minKFWiggleDist, double minKFDist)
@@ -195,7 +330,7 @@ void PTAMWrapper::run()
 	frameWidth = mimFrameBW.size().x;
 	frameHeight = mimFrameBW.size().y;
 
-	ResetInternal();
+	InitForTheFirstTime();
 
 	snprintf(charBuf,200,"Video resolution: %d x %d",frameWidth,frameHeight);
 	ROS_INFO(charBuf);
@@ -211,14 +346,16 @@ void PTAMWrapper::run()
 	else
 		desiredWindowSize = CVD::ImageRef(frameWidth,frameHeight);
 
+
 	boost::unique_lock<boost::mutex> lock(new_frame_signal_mutex);
 
 	while(keepRunning)
 	{
-        bool bWasLocked = mpMap->mapLockManager.CheckLockAndWait(this, 0);
+		bool bWasLocked = mpMap->mapLockManager.CheckLockAndWait(this, 0);
 
 		if(newImageAvailable)
 		{
+			mpMap->bEditLocked = mgvnLockMap;
 			newImageAvailable = false;
 
 			// copy to working copy
@@ -231,6 +368,7 @@ void PTAMWrapper::run()
 			lock.unlock();
 
 			HandleFrame();
+
 
 			if(changeSizeNextRender)
 			{
@@ -256,8 +394,6 @@ void PTAMWrapper::run()
 // - add a PTAM observation to filter.
 void PTAMWrapper::HandleFrame()
 {
-	//printf("tracking Frame at ms=%d (from %d)\n",getMS(ros::Time::now()),mimFrameTime-filter->delayVideo);
-
 	// prep data
 	msg = "";
 	ros::Time startedFunc = ros::Time::now();
@@ -277,6 +413,8 @@ void PTAMWrapper::HandleFrame()
 	myGLWindow->SetupViewport();
 	myGLWindow->SetupVideoOrtho();
 	myGLWindow->SetupVideoRasterPosAndZoom();
+
+
 
 	// 1. transform with filter
 	TooN::Vector<6> PTAMPoseGuess = filter->backTransformPTAMObservation(filterPosePrePTAM.slice<0,6>());
@@ -298,8 +436,10 @@ void PTAMWrapper::HandleFrame()
 
 	lastPTAMMessage = msg = mpTracker->GetMessageForUser();
 	ros::Duration timePTAM= ros::Time::now() - startedPTAM;
+
 	TooN::Vector<6> PTAMResultSE3TwistOrg = PTAMResultSE3.ln();
-	node->publishTf(mpTracker->GetCurrentPose(),mimFrameTimeRos_workingCopy, mimFrameSEQ_workingCopy,"cam_front");
+
+	node->publishTf(mpTracker->GetCurrentPose(), mimFrameTimeRos_workingCopy, mimFrameSEQ_workingCopy, "cam_front");
 
 	// 1. multiply from left by frontToDroneNT.
 	// 2. convert to xyz,rpy
@@ -308,6 +448,7 @@ void PTAMWrapper::HandleFrame()
 
 	// 3. transform with filter
 	TooN::Vector<6> PTAMResultTransformed = filter->transformPTAMObservation(PTAMResult);
+
 
 	// init failed?
 	if(mpTracker->lastStepResult == mpTracker->I_FAILED)
@@ -321,7 +462,7 @@ void PTAMWrapper::HandleFrame()
 		filter->setCurrentScales(TooN::makeVector(mpMapMaker->mpMap->initialScaleFactor * 1.2, mpMapMaker->mpMap->initialScaleFactor * 1.2, mpMapMaker->mpMap->initialScaleFactor * 1.2));
 		mpMapMaker->mpMap->currentScaleFactor = filter->getCurrentScales()[0];
 		ROS_INFO("PTAM initialized!");
-		ROS_INFO("initial scale: %f\n",mpMapMaker->mpMap->initialScaleFactor*1.2);
+		ROS_INFO("initial scale: %f\n", mpMapMaker->mpMap->initialScaleFactor*1.2);
 		node->publishCommand("u l PTAM initialized (took second KF)");
 		framesIncludedForScaleXYZ = -1;
 		lockNextFrame = true;
@@ -331,7 +472,6 @@ void PTAMWrapper::HandleFrame()
 	{
 		node->publishCommand("u l PTAM initialization started (took first KF)");
 	}
-
 	// --------------------------- assess result ------------------------------
 	bool isGood = true;
 	bool isVeryGood = true;
@@ -349,8 +489,9 @@ void PTAMWrapper::HandleFrame()
 			mpTracker->lastStepResult == mpTracker->I_FAILED ||
 			mpTracker->lastStepResult == mpTracker->T_LOST ||
 			mpTracker->lastStepResult == mpTracker->NOT_TRACKING ||
-			mpTracker->lastStepResult == mpTracker->INITIALIZING)
+			mpTracker->lastStepResult == mpTracker->INITIALIZING){
 		isGood = isVeryGood = false;
+	}
 	else
 	{
 		// some chewy heuristic when to add and when not to.
@@ -392,7 +533,6 @@ void PTAMWrapper::HandleFrame()
 			isGoodCount = std::max(isGoodCount,-2);
 		if(mpTracker->lastStepResult == mpTracker->T_RECOVERED_GOOD)
 			isGoodCount = std::max(isGoodCount,-5);
-
 	}
 
 	TooN::Vector<10> filterPosePostPTAM;
@@ -419,8 +559,6 @@ void PTAMWrapper::HandleFrame()
 	pthread_mutex_unlock( &filter->filter_CS );
 
 	TooN::Vector<6> filterPosePostPTAMBackTransformed = filter->backTransformPTAMObservation(filterPosePostPTAM.slice<0,6>());
-
-
 	// if interval is started: add one step.
 	int includedTime = mimFrameTime_workingCopy - ptamPositionForScaleTakenTimestamp;
 	if(framesIncludedForScaleXYZ >= 0) framesIncludedForScaleXYZ++;
@@ -489,10 +627,11 @@ void PTAMWrapper::HandleFrame()
 		node->publishCommand(std::string("u l ")+charBuf);
 	}
 
-
+	//forceKF = true;
 	// ----------------------------- Take KF? -----------------------------------
 	if(!mapLocked && isVeryGood && (forceKF || mpMap->vpKeyFrames.size() < maxKF || maxKF <= 1))
 	{
+		ROS_DEBUG("PTAMWrapper:: Take KF!!!");
 		mpTracker->TakeKF(forceKF);
 		forceKF = false;
 	}
@@ -515,7 +654,6 @@ void PTAMWrapper::HandleFrame()
 		PTAMStatus = PTAM_FALSEPOSITIVE;
 	else
 		PTAMStatus = PTAM_LOST;
-
 
 	// ----------------------------- update shallow map --------------------------
 	if(!mapLocked && rand()%5==0)
@@ -569,8 +707,6 @@ void PTAMWrapper::HandleFrame()
 
 	}
 
-
-
 	// ---------------------- output and render! ---------------------------
 	ros::Duration timeALL = ros::Time::now() - startedFunc;
 	if(isVeryGood) snprintf(charBuf,1000,"\nQuality: best            ");
@@ -584,6 +720,7 @@ void PTAMWrapper::HandleFrame()
 	else snprintf(charBuf+83,800, "     ");
 	if(filter->allSyncLocked) snprintf(charBuf+88,800, "s.l. ");
 	else snprintf(charBuf+88,800, "     ");
+
 
 
 	msg += charBuf;
