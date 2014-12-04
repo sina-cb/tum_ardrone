@@ -17,8 +17,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with tum_ardrone.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
- 
+
+
 #include "DroneKalmanFilter.h"
 #include "EstimationNode.h"
 
@@ -39,7 +39,7 @@ const double varSpeedError_rp = 360*360 * 16;	// increased because prediction ba
 const double varSpeedObservation_yaw = 5*5;
 const double varPoseObservation_yaw = 3*3;
 const double varAccelerationError_yaw = 360*360;
-	
+
 
 // constants (assumed delays in ms).
 // default ping values: nav=25, vid=50
@@ -94,7 +94,6 @@ DroneKalmanFilter::DroneKalmanFilter(EstimationNode* n)
 
 }
 
-
 DroneKalmanFilter::~DroneKalmanFilter(void)
 {
 	// dont delete nothing here, as this is also called for shallow copy.
@@ -107,7 +106,6 @@ void DroneKalmanFilter::release()
 	delete velQueue;
 }
 
-
 void DroneKalmanFilter::setPing(unsigned int navPing, unsigned int vidPing)
 {
 	// add a constant of 20ms // 40ms to accound for delay due to ros.
@@ -118,7 +116,7 @@ void DroneKalmanFilter::setPing(unsigned int navPing, unsigned int vidPing)
 	int new_delayXYZ = base_delayXYZ;
 	int new_delayVideo = base_delayVideo + vidPing/(int)2 - navPing/(int)2;
 	int new_delayControl = base_delayControl + navPing;
-	
+
 	delayXYZ = std::min(500,std::max(40,std::min(new_delayVideo,new_delayXYZ)));
 	delayVideo = std::min(500,std::max(40,new_delayVideo));
 	delayControl = std::min(200,std::max(50,new_delayControl));
@@ -149,7 +147,7 @@ void DroneKalmanFilter::reset()
 	// clear IMU-queus
 	navdataQueue->clear();
 	velQueue->clear();
-	
+
 	predictdUpToTimestamp = getMS(ros::Time::now());
 	predictedUpToTotal = -1;
 
@@ -183,13 +181,11 @@ void DroneKalmanFilter::clearPTAM()
 	lastPosesValid = false;
 }
 
-
-
 // this function does the actual work, predicting one timestep ahead.
 void DroneKalmanFilter::predictInternal(geometry_msgs::Twist activeControlInfo, int timeSpanMicros, bool useControlGains)
 {
 	if(timeSpanMicros <= 0) return;
-	
+
 	useControlGains = useControlGains && this->useControl;
 
 	bool controlValid = !(activeControlInfo.linear.z > 1.01 || activeControlInfo.linear.z < -1.01 ||
@@ -214,7 +210,7 @@ void DroneKalmanFilter::predictInternal(geometry_msgs::Twist activeControlInfo, 
 	double pitchRad = pitch.state * 3.14159268 / 180;
 	double forceX = cos(yawRad) * sin(rollRad) * cos(pitchRad) - sin(yawRad) * sin(pitchRad);
 	double forceY = - sin(yawRad) * sin(rollRad) * cos(pitchRad) - cos(yawRad) * sin(pitchRad);
-	
+
 
 	double vx_gain = tsSeconds * c1 * (c2*forceX - x.state[1]);
 	double vy_gain = tsSeconds * c1 * (c2*forceY - y.state[1]);
@@ -345,10 +341,12 @@ void DroneKalmanFilter::observeIMU_XYZ(const ardrone_autonomy::Navdata* nav)
 
 }
 
-
-
 void DroneKalmanFilter::observeIMU_RPY(const ardrone_autonomy::Navdata* nav)
 {
+    if (nav->rotX != nav->rotX){
+        ROS_ERROR_ONCE("DroneKalmanFilter::observeIMU_RPY:: nav->rotX == NaN");
+    }
+
 	roll.observe(nav->rotX,varPoseObservation_rp_IMU);
 	pitch.observe(nav->rotY,varPoseObservation_rp_IMU);
 
@@ -466,7 +464,7 @@ void DroneKalmanFilter::sync_rpy(double roll_global, double pitch_global, double
 	// set yaw on first call
 	if(rp_offset_framesContributed < 1)
 		yaw_offset = yaw.state[0] - yaw_global;
-	
+
 	// update roll and pitch offset continuously as normal average.
 	if(rp_offset_framesContributed < 100)
 	{
@@ -541,7 +539,7 @@ void DroneKalmanFilter::updateScaleXYZ(TooN::Vector<3> ptamDiff, TooN::Vector<3>
 	double totSumII = 0;
 	double totSumPP = 0;
 	double totSumPI = 0;
-	
+
 	double sumIIxy = 0;
 	double sumPPxy = 0;
 	double sumPIxy = 0;
@@ -562,7 +560,7 @@ void DroneKalmanFilter::updateScaleXYZ(TooN::Vector<3> ptamDiff, TooN::Vector<3>
 			sumIIxy += (*scalePairs)[i].imu[0]*(*scalePairs)[i].imu[0] + (*scalePairs)[i].imu[1]*(*scalePairs)[i].imu[1];
 			sumPPxy += (*scalePairs)[i].ptam[0]*(*scalePairs)[i].ptam[0] + (*scalePairs)[i].ptam[1]*(*scalePairs)[i].ptam[1];
 			sumPIxy += (*scalePairs)[i].ptam[0]*(*scalePairs)[i].imu[0] + (*scalePairs)[i].ptam[1]*(*scalePairs)[i].imu[1];
-		
+
 			sumIIz += (*scalePairs)[i].imu[2]*(*scalePairs)[i].imu[2];
 			sumPPz += (*scalePairs)[i].ptam[2]*(*scalePairs)[i].ptam[2];
 			sumPIz += (*scalePairs)[i].ptam[2]*(*scalePairs)[i].imu[2];
@@ -586,7 +584,7 @@ void DroneKalmanFilter::updateScaleXYZ(TooN::Vector<3> ptamDiff, TooN::Vector<3>
 	double scale_PTAMSmallVar = (*scalePairs)[0].computeEstimator(sumPP+totSumPP,sumII+totSumII,sumPI+totSumPI,0.00001,1);
 	double scale_IMUSmallVar = (*scalePairs)[0].computeEstimator(sumPP+totSumPP,sumII+totSumII,sumPI+totSumPI,1,0.00001);
 
-	
+
 	double scale_Filtered_xy = (*scalePairs)[0].computeEstimator(sumPPxy,sumIIxy,sumPIxy,0.2,0.01);
 	double scale_Filtered_z = (*scalePairs)[0].computeEstimator(sumPPz,sumIIz,sumPIz,0.2,0.01);
 
@@ -594,8 +592,8 @@ void DroneKalmanFilter::updateScaleXYZ(TooN::Vector<3> ptamDiff, TooN::Vector<3>
 	scalePairsIn = numIn;
 	scalePairsOut = numOut;
 
-	printf("scale: in: %i; out: %i, filt: %.3f; xyz: %.1f < %.1f < %.1f; xy: %.1f < %.1f < %.1f; z: %.1f < %.1f < %.1f;\n", 
-		numIn, numOut, scale_Filtered, 
+	printf("scale: in: %i; out: %i, filt: %.3f; xyz: %.1f < %.1f < %.1f; xy: %.1f < %.1f < %.1f; z: %.1f < %.1f < %.1f;\n",
+		numIn, numOut, scale_Filtered,
 		scale_PTAMSmallVar, scale_Unfiltered, scale_IMUSmallVar,
 		(*scalePairs)[0].computeEstimator(sumPPxy,sumIIxy,sumPIxy,0.00001,1),
 		scale_Filtered_xy,
@@ -798,7 +796,7 @@ TooN::Vector<3> DroneKalmanFilter::transformPTAMObservation(double x,double y,do
 TooN::Vector<6> DroneKalmanFilter::transformPTAMObservation(TooN::Vector<6> obs)
 {
 	obs.slice<0,3>() = transformPTAMObservation(obs[0], obs[1], obs[2], obs[5]);
-	
+
 	obs[3] += roll_offset;
 	obs[4] += pitch_offset;
 	obs[5] += yaw_offset;
@@ -855,6 +853,9 @@ tum_ardrone::filter_state DroneKalmanFilter::getCurrentPoseSpeed()
 
 TooN::Vector<10> DroneKalmanFilter::getCurrentPoseSpeedAsVec()
 {
+    if (roll.state != roll.state){
+        ROS_ERROR_ONCE("DroneKalmanFilter::getCurrentPoseSpeedAsVec:: NaN Found!!!", roll.state, pitch.state, yaw.state[0]);
+    }
 	return TooN::makeVector(x.state[0], y.state[0], z.state[0], roll.state, pitch.state, yaw.state[0],
 		x.state[1], y.state[1], z.state[1],yaw.state[1]);
 }

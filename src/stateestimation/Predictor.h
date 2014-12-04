@@ -20,10 +20,11 @@
  */
 #ifndef __PREDICTOR_H
 #define __PREDICTOR_H
- 
+
 #include "TooN/TooN.h"
 #include "TooN/so3.h"
 #include "TooN/se3.h"
+#include "ros/ros.h"
 #include <string>
 #include <ardrone_autonomy/Navdata.h>
 
@@ -39,7 +40,7 @@
 //		  positive x: "right"
 //		  positive y: "down"
 
-// bottom: 
+// bottom:
 //		  positive z: "down"
 //		  positive x: "right"
 //		  positive y: "back"
@@ -105,7 +106,7 @@ public:
 
 	void predictOneStep(ardrone_autonomy::Navdata* nfo);
 	void resetPos();
-	
+
 	Predictor(std::string basePath="");
 	~Predictor(void);
 };

@@ -120,12 +120,10 @@ void PTAMWrapper::InitForTheFirstTime(){
 	mimFrameBW.resize(CVD::ImageRef(frameWidth, frameHeight));
 	mimFrameBW_workingCopy.resize(CVD::ImageRef(frameWidth, frameHeight));
 
-
 	if(mpMapMaker != 0) delete mpMapMaker;
 	if(mpMap != 0) delete mpMap;
 	if(mpTracker != 0) delete mpTracker;
 	if(mpCamera != 0) delete mpCamera;
-
 
 	// read camera calibration (yes, its done here)
 	std::string file = node->calibFile;
@@ -159,7 +157,22 @@ void PTAMWrapper::InitForTheFirstTime(){
 	mpMapSerializer = new MapSerializer(mvpMaps);     //Added from PTAMM System class
 	//UP HERE
 
+    setPTAMPars(minKFTimeDist, minKFWiggleDist, minKFDist);
 
+	predConvert->setPosRPY(0, 0, 0, 0, 0, 0);
+	predIMUOnlyForScale->setPosRPY(0, 0, 0, 0, 0, 0);
+
+	resetPTAMRequested = false;
+	forceKF = false;
+	isGoodCount = 0;
+	lastAnimSentClock = 0;
+	lockNextFrame = false;
+	PTAMInitializedClock = 0;
+	lastPTAMMessage = "";
+
+	flushMapKeypoints = false;
+
+	node->publishCommand("u l PTAMM has been reset.");
 }
 
 bool PTAMWrapper::SwitchMap( int nMapNum, bool bForce ){
@@ -543,7 +556,6 @@ void PTAMWrapper::HandleFrame()
 	// if isGood>=3 && framesIncludedForScale < 0			===> START INTERVAL
 	// if 18 <= framesIncludedForScale <= 36 AND isGood>=3	===> ADD INTERVAL, START INTERVAL
 	// if framesIncludedForScale > 36						===> set framesIncludedForScale=-1
-
 	// include!
 
 	// TODO: make shure filter is handled properly with permanent roll-forwards.
@@ -558,7 +570,8 @@ void PTAMWrapper::HandleFrame()
 	filterPosePostPTAM = filter->getCurrentPoseSpeedAsVec();
 	pthread_mutex_unlock( &filter->filter_CS );
 
-	TooN::Vector<6> filterPosePostPTAMBackTransformed = filter->backTransformPTAMObservation(filterPosePostPTAM.slice<0,6>());
+    TooN::Vector<6> filterPosePostPTAMBackTransformed = filter->backTransformPTAMObservation(filterPosePostPTAM.slice<0,6>());
+
 	// if interval is started: add one step.
 	int includedTime = mimFrameTime_workingCopy - ptamPositionForScaleTakenTimestamp;
 	if(framesIncludedForScaleXYZ >= 0) framesIncludedForScaleXYZ++;

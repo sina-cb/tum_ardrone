@@ -83,7 +83,7 @@ class PVFilter
 public:
 	TooN::Vector<2> state;
 	TooN::Matrix<2,2> var;
-	
+
 
 	// constructors
 	inline PVFilter(TooN::Vector<2> state, TooN::Matrix<2,2> var)
@@ -120,10 +120,14 @@ public:
 		TooN::Vector<2> K = var[0] / (obsVar + var(0,0));	//K is first col = first row of var.
 		state = state + K * (obs - state[0]);
 		TooN::Matrix<2> tmp = TooN::Identity;
-		tmp(0,0) -= K[0]; 
+		tmp(0,0) -= K[0];
 		tmp(1,0) -= K[1];
 		var = tmp * var;
 
+        if (state[0] != state[0]){
+            int a = 10 /0;
+		    ROS_ERROR_ONCE("PVFilter::observePose:: Variables\nstate: %f, obs: %f, obsVar: %f", state[0], obs, obsVar);
+		}
 	}
 
 
@@ -138,9 +142,13 @@ public:
 		TooN::Vector<2> K = var[1] / (obsVar + var(1,1));	//K is second col = second row of var.
 		state = state + K * (obs - state[1]);
 		TooN::Matrix<2> tmp = TooN::Identity;
-		tmp(0,1) -= K[0]; 
+		tmp(0,1) -= K[0];
 		tmp(1,1) -= K[1];
 		var = tmp * var;
+
+		if (state[0] != state[0]){
+		    ROS_ERROR_ONCE("PVFilter::observeSpeed:: Variables\nstate: %f, obs: %f, obsVar: %f", state[0], obs, obsVar);
+		}
 	}
 
 
@@ -166,6 +174,10 @@ public:
 		var(1,0) += coVarFac * accelerationVar * 0.5 * ms*ms*ms * 4;
 		var(0,1) += coVarFac * accelerationVar * 0.5 * ms*ms*ms * 4;
 		var(1,1) += speedVarFac * accelerationVar * 1 * ms*ms * 4 * 4;
+
+		if (state[0] != state[0]){
+		    ROS_ERROR_ONCE("PVFilter::predict1:: Variables\nstate: %f", state[0]);
+		}
 	}
 
 	// predict
@@ -191,6 +203,10 @@ public:
 		var(1,0) += vars[2];
 		var(0,1) += vars[2];
 		var(1,1) += vars[1];
+
+		if (state[0] != state[0]){
+		    ROS_ERROR_ONCE("PVFilter::predict2:: Variables\nstate: %f", state[0]);
+		}
 	}
 };
 
@@ -201,7 +217,7 @@ class PFilter
 public:
 	double state;
 	double var;
-	
+
 	inline PFilter() : state(0), var(1e10) {};
 	inline PFilter(double initState) : state(initState), var(0) {};
 
@@ -213,6 +229,10 @@ public:
 		*/
 		state += controlGains;
 		var += speedVar * ms * ms / 1000000;
+
+		if (state != state){
+		    ROS_ERROR_ONCE("PFilter::predict:: Variables\nstate: %f, var: %f, controlGains: %f, speedVar: %f, ms: %f", state, var, controlGains, speedVar, ms);
+		}
 	}
 
 	inline void observe(double obs, double obsVar)
@@ -225,6 +245,10 @@ public:
 		double w = var / (var + obsVar);
 		state = (1-w) * state + w * obs;
 		var = var * obsVar / (var + obsVar);
+
+		if (state != state){
+		    ROS_ERROR_ONCE("PFilter::observe:: Variables\nstate: %f, var: %f, obs: %f, obsVar: %f", state, var, obs, obsVar);
+		}
 	}
 };
 
@@ -263,7 +287,7 @@ private:
 	long last_yaw_droneTime;
 	long last_z_droneTime;
 	long last_z_packageID;
-	
+
 	// contains the last ptam-pose added (raw ptam-data).
 	TooN::Vector<3> last_PTAM_pose;
 
@@ -325,7 +349,7 @@ public:
 	static int delayXYZ;	// assumed 70 (gets here 70ms later than rpy)
 	static int delayVideo;	// assumed 120 (gets here 120ms later than rpy)
 	static int delayControl;	// assumed 120 (gets here 120ms later than rpy)
-	
+
 	static const int base_delayXYZ;
 	static const int base_delayVideo;
 	static const int base_delayControl;
@@ -350,7 +374,7 @@ public:
 	// predicts up to a specified time in ms, using all available data.
 	// if consume=false, does not delete anything from queues.
 	void predictUpTo(int timestamp, bool consume = true, bool useControlGains = true);
-	
+
 	void setPing(unsigned int navPing, unsigned int vidPing);
 
 	// gets current pose and variances (up to where predictUpTo has been called)
@@ -389,7 +413,7 @@ public:
 
 	//
 	void flushScalePairs();
-	
+
 	// locking
 	bool allSyncLocked;
 	bool useControl;

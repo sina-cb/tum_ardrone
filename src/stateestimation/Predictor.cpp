@@ -52,6 +52,12 @@ void Predictor::calcCombinedTransformations()
 // input in rpy
 void Predictor::setPosRPY(double newX, double newY, double newZ, double newRoll, double newPitch, double newYaw)
 {
+    if (newRoll != newRoll){
+        ROS_ERROR_ONCE("Predictor::setPosRPY:: NaN found, RETURN!!!");
+        ROS_DEBUG_ONCE("newX: %f, newY: %f, newZ: %f, newR: %f, newP: %f, newYa: %f", newX, newY, newZ, newRoll, newPitch, newYaw);
+        return;
+    }
+
 	// set rpy
 	x = newX; y = newY; z = newZ;
 	roll = newRoll; pitch = newPitch; yaw = newYaw;
@@ -89,7 +95,7 @@ void Predictor::setPosSE3_droneToGlobal(TooN::SE3<double> newDroneToGlobal)
 {
 	droneToGlobal = newDroneToGlobal;
 	globaltoDrone = droneToGlobal.inverse();
-	
+
 	x = droneToGlobal.get_translation()[0];
 	y = droneToGlobal.get_translation()[1];
 	z = droneToGlobal.get_translation()[2];
@@ -128,10 +134,9 @@ void Predictor::predictOneStep(ardrone_autonomy::Navdata* nfo)
 	z = nfo->altd*0.001;
 
 	// angles
-	roll = nfo->rotX/1000.0;
+    roll = nfo->rotX/1000.0;
 	pitch = nfo->rotY/1000.0;
 	yaw = nfo->rotZ/1000.0;
-
 }
 
 void Predictor::resetPos()

@@ -241,6 +241,7 @@ void Tracker::tryToRecover()
 
 void Tracker::TakeKF(bool force)
 {
+    //ROS_DEBUG("Tracker::TakeKF:: took out one of the heuristics, return it back!");
 	if(mpMap->IsGood())
 	{
 		// Heuristics to check if a key-frame should be added to the map:
