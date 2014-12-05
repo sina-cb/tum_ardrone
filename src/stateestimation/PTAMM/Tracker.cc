@@ -973,9 +973,11 @@ Vector<6> Tracker::CalcPoseUpdate(vector<TrackerData*> vTD, double dOverrideSigm
 		double dErrorSq = v2 * v2;
 		double dWeight;
 
-		if(nEstimator == 0)
+		if(nEstimator == 0) {
 			dWeight= Tukey::Weight(dErrorSq, dSigmaSquared);
-		else if(nEstimator == 1)
+			if (dWeight != dWeight)
+				dWeight = 0.0;
+		} else if(nEstimator == 1)
 			dWeight= Cauchy::Weight(dErrorSq, dSigmaSquared);
 		else
 			dWeight= Huber::Weight(dErrorSq, dSigmaSquared);
