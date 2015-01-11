@@ -32,30 +32,28 @@ using namespace GVars3;
  * @param mm map maker
  */
 Tracker::Tracker(ImageRef irVideoSize, const ATANCamera &c, std::vector<Map*> &maps, Map *m, MapMaker &mm) :
-																												  mCurrentKF(c),
-																												  mvpMaps(maps),
-																												  mpMap(m),
-																												  mMapMaker(mm),
-																												  mCamera(c),
-																												  mRelocaliser(maps, mCamera),
-																												  mirSize(irVideoSize),
-																												  mFirstKF(mCamera),
-																												  mPreviousFrameKF(mCamera)
+    mCurrentKF(c),
+    mvpMaps(maps),
+    mpMap(m),
+    mMapMaker(mm),
+    mCamera(c),
+    mRelocaliser(maps, mCamera),
+    mirSize(irVideoSize),
+    mFirstKF(mCamera),
+    mPreviousFrameKF(mCamera)
 {
-	mCurrentKF.bFixed = false;
-	//  GUI.RegisterCommand("Reset", GUICommandCallBack, this);			//TODO: Check if we need these in the robot or not!
-	//  GUI.RegisterCommand("KeyPress", GUICommandCallBack, this);
-	//  GUI.RegisterCommand("PokeTracker", GUICommandCallBack, this);	//TODO: Check if we need these in the robot or not!
-	TrackerData::irImageSize = mirSize;
+    mCurrentKF.bFixed = false;
+    //  GUI.RegisterCommand("Reset", GUICommandCallBack, this);			//TODO: Check if we need these in the robot or not!
+    //  GUI.RegisterCommand("KeyPress", GUICommandCallBack, this);
+    //  GUI.RegisterCommand("PokeTracker", GUICommandCallBack, this);	//TODO: Check if we need these in the robot or not!
+    TrackerData::irImageSize = mirSize;
 
-	mpSBILastFrame = NULL;
-	mpSBIThisFrame = NULL;
-	mnLastKeyFrameDroppedClock = 0;
+    mpSBILastFrame = NULL;
+    mpSBIThisFrame = NULL;
+    mnLastKeyFrameDroppedClock = 0;
 
-	//mRelocaliser.mpBestMap = mpMap; //TODO: Can be uncomented
-
-	// Most of the initialisation is done in Reset()
-	Reset();
+    // Most of the initialisation is done in Reset()
+    Reset();
 }
 
 /**
@@ -63,23 +61,23 @@ Tracker::Tracker(ImageRef irVideoSize, const ATANCamera &c, std::vector<Map*> &m
  */
 void Tracker::ResetCommon()
 {
-	mbDidCoarse = false;
-	mbUserPressedSpacebar = false;
-	mTrackingQuality = GOOD;
-	mnLostFrames = 0;
-	mdMSDScaledVelocityMagnitude = 0;
-	mCurrentKF.dSceneDepthMean = 1.0;
-	mCurrentKF.dSceneDepthSigma = 1.0;
-	mnInitialStage = TRAIL_TRACKING_NOT_STARTED;
-	mlTrails.clear();
-	mCamera.SetImageSize(mirSize);
-	mCurrentKF.mMeasurements.clear();
-	mnLastKeyFrameDropped = -20;
-	mnLastKeyFrameDroppedClock = 0;
-	mnFrame=0;
-	mv6CameraVelocity = Zeros;
-	mbJustRecoveredSoUseCoarse = false;
-	predictedCFromW = SE3<>();
+    mbDidCoarse = false;
+    mbUserPressedSpacebar = false;
+    mTrackingQuality = GOOD;
+    mnLostFrames = 0;
+    mdMSDScaledVelocityMagnitude = 0;
+    mCurrentKF.dSceneDepthMean = 1.0;
+    mCurrentKF.dSceneDepthSigma = 1.0;
+    mnInitialStage = TRAIL_TRACKING_NOT_STARTED;
+    mlTrails.clear();
+    mCamera.SetImageSize(mirSize);
+    mCurrentKF.mMeasurements.clear();
+    mnLastKeyFrameDropped = -20;
+    mnLastKeyFrameDroppedClock = 0;
+    mnFrame=0;
+    mv6CameraVelocity = Zeros;
+    mbJustRecoveredSoUseCoarse = false;
+    predictedCFromW = SE3<>();
 
 }
 
@@ -91,20 +89,20 @@ void Tracker::ResetCommon()
  */
 void Tracker::Reset()
 {
-	if( mpMap->bEditLocked ) {
-		cerr << "MAP LOCKED: Cannot reset map " << mpMap->MapID() << "." << endl;
-		return;
-	}
+    if( mpMap->bEditLocked ) {
+        cerr << "MAP LOCKED: Cannot reset map " << mpMap->MapID() << "." << endl;
+        return;
+    }
 
-	ResetCommon();
+    ResetCommon();
 
-	// Tell the MapMaker to reset itself..
-	// this may take some time, since the mapmaker thread may have to wait
-	// for an abort-check during calculation, so sleep while waiting.
-	// MapMaker will also clear the map.
-	mMapMaker.RequestReset();
-	while(!mMapMaker.ResetDone())
-		usleep(10);
+    // Tell the MapMaker to reset itself..
+    // this may take some time, since the mapmaker thread may have to wait
+    // for an abort-check during calculation, so sleep while waiting.
+    // MapMaker will also clear the map.
+    mMapMaker.RequestReset();
+    while(!mMapMaker.ResetDone())
+        usleep(10);
 }
 
 // TrackFrame is called by System.cc with each incoming video frame.
@@ -113,148 +111,163 @@ void Tracker::Reset()
 // or not (it should not draw, for example, when AR stuff is being shown.)
 void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 {
-	mbDraw = bDraw;
-	mMessageForUser.str("");   // Wipe the user message clean
+    ROS_ERROR("TRACK FRAME - START");
+    mbDraw = bDraw;
+    mMessageForUser.str("");   // Wipe the user message clean
 
-	// Take the input video image, and convert it into the tracker's keyframe struct
-	// This does things like generate the image pyramid and find FAST corners
-	mCurrentKF.mMeasurements.clear();
-	mCurrentKF.MakeKeyFrame_Lite(imFrame);
 
-	// Update the small images for the rotation estimator
-	static gvar3<double> gvdSBIBlur("Tracker.RotationEstimatorBlur", TRACKER_ROTATION_ESTIMATOR_BLUR, SILENT);
-	static gvar3<int> gvnUseSBI("Tracker.UseRotationEstimator", 1, SILENT);
-	mbUseSBIInit = *gvnUseSBI;
-	if (!mpSBIThisFrame)
-	{
-		mpSBIThisFrame = new SmallBlurryImage(mCurrentKF, *gvdSBIBlur);
-		mpSBILastFrame = new SmallBlurryImage(mCurrentKF, *gvdSBIBlur);
-	}
-	else
-	{
-		delete mpSBILastFrame;
-		mpSBILastFrame = mpSBIThisFrame;
-		mpSBIThisFrame = new SmallBlurryImage(mCurrentKF, *gvdSBIBlur);
-	}
+    // Take the input video image, and convert it into the tracker's keyframe struct
+    // This does things like generate the image pyramid and find FAST corners
+    mCurrentKF.mMeasurements.clear();
+    mCurrentKF.MakeKeyFrame_Lite(imFrame);
 
-	// From now on we only use the keyframe struct!
-	mnFrame++;
+    // Update the small images for the rotation estimator
+    static gvar3<double> gvdSBIBlur("Tracker.RotationEstimatorBlur", TRACKER_ROTATION_ESTIMATOR_BLUR, SILENT);
+    static gvar3<int> gvnUseSBI("Tracker.UseRotationEstimator", 1, SILENT);
+    mbUseSBIInit = *gvnUseSBI;
+    if (!mpSBIThisFrame)
+    {
+        ROS_ERROR("TRACK FRAME - 1");
+        mpSBIThisFrame = new SmallBlurryImage(mCurrentKF, *gvdSBIBlur);
+        mpSBILastFrame = new SmallBlurryImage(mCurrentKF, *gvdSBIBlur);
+    }
+    else
+    {
+        ROS_ERROR("TRACK FRAME - 2");
+        delete mpSBILastFrame;
+        mpSBILastFrame = mpSBIThisFrame;
+        mpSBIThisFrame = new SmallBlurryImage(mCurrentKF, *gvdSBIBlur);
+    }
 
-	if (mbDraw)
-	{
-		glDrawPixels(mCurrentKF.aLevels[0].im);
-		if(GV2.GetInt("Tracker.DrawFASTCorners",TRACKER_DRAW_FAST_CORNERS_DEFAULT, SILENT))
-		{
-			glColor3f(1,0,1);  glPointSize(1); glBegin(GL_POINTS);
-			for(unsigned int i=0; i<mCurrentKF.aLevels[0].vCorners.size(); i++)
-				glVertex(mCurrentKF.aLevels[0].vCorners[i]);
-			glEnd();
-		}
-	}
+    // From now on we only use the keyframe struct!
+    mnFrame++;
 
-	// Decide what to do - if there is a map, try to track the map ...
-	if(mpMap->IsGood())
-	{
-		if(mnLostFrames < NUM_LOST_FRAMES)  // .. but only if we're not lost!
-		{
-			if(mbUseSBIInit)
-				CalcSBIRotation();
+    if (mbDraw)
+    {
+        ROS_ERROR("TRACK FRAME - 3");
+        glDrawPixels(mCurrentKF.aLevels[0].im);
+        if(GV2.GetInt("Tracker.DrawFASTCorners",TRACKER_DRAW_FAST_CORNERS_DEFAULT, SILENT))
+        {
+            ROS_ERROR("TRACK FRAME - 4");
+            glColor3f(1,0,1);  glPointSize(1); glBegin(GL_POINTS);
+            for(unsigned int i=0; i<mCurrentKF.aLevels[0].vCorners.size(); i++)
+                glVertex(mCurrentKF.aLevels[0].vCorners[i]);
+            glEnd();
+        }
+    }
 
-			ApplyMotionModel();       //
-			TrackMap();               //  These three lines do the main tracking work.
-			UpdateMotionModel();      //
+    // Decide what to do - if there is a map, try to track the map ...
+    if(mpMap->IsGood())
+    {
+        ROS_ERROR("TRACK FRAME - 5");
+        if(mnLostFrames < NUM_LOST_FRAMES)  // .. but only if we're not lost!
+        {
+            ROS_ERROR("TRACK FRAME - 6");
+            if(mbUseSBIInit){
+                ROS_ERROR("TRACK FRAME - 7");
+                CalcSBIRotation();
+            }
 
-			AssessTrackingQuality();  //  Check if we're lost or if tracking is poor.
+            ApplyMotionModel();       //
+            TrackMap();               //  These three lines do the main tracking work.
+            UpdateMotionModel();      //
 
-			if(mTrackingQuality == GOOD)
-				lastStepResult = T_GOOD;
-			if(mTrackingQuality == DODGY)
-				lastStepResult = T_DODGY;
-			if(mTrackingQuality == BAD)
-				lastStepResult = T_LOST;
+            AssessTrackingQuality();  //  Check if we're lost or if tracking is poor.
 
-			{ // Provide some feedback for the user:
-				mMessageForUser << "Tracking Map, quality ";
-				if(mTrackingQuality == GOOD)  mMessageForUser << "good.";
-				if(mTrackingQuality == DODGY) mMessageForUser << "poor.";
-				if(mTrackingQuality == BAD)   mMessageForUser << "bad.";
-				mMessageForUser << " Found:";
-				for(int i=0; i<LEVELS; i++) {
-					mMessageForUser << " " << manMeasFound[i] << "/" << manMeasAttempted[i];
-				}
-				mMessageForUser << " Map " << mpMap->MapID() << ": "
-						<< mpMap->vpPoints.size() << "P, " << mpMap->vpKeyFrames.size() << "KF";
-			}
+            //mTrackingQuality = GOOD;
 
-			/*/ Heuristics to check if a key-frame should be added to the map:
-			  if(mTrackingQuality == GOOD && (forceKF || (
-				 mMapMaker.NeedNewKeyFrame(mCurrentKF) &&
-				 mnFrame - mnLastKeyFrameDropped > FRAMES_BETWEEN_KEYFRAMES  &&
-				 mMapMaker.QueueSize() < 3)))
-				{
-				  mMessageForUser << " Adding key-frame.";
-				  AddNewKeyFrame();
-				  forceKF = false;
-				};*/
+            if(mTrackingQuality == GOOD)
+                lastStepResult = T_GOOD;
+            if(mTrackingQuality == DODGY)
+                lastStepResult = T_DODGY;
+            if(mTrackingQuality == BAD)
+                lastStepResult = T_LOST;
 
-		}
-		else  // what if there is a map, but tracking has been lost?
-		{
-			tryToRecover();
-		}
-	}
-	else{ // If there is no map, try to make one.
-		TrackForInitialMap();
-	}
+            { // Provide some feedback for the user:
+                mMessageForUser << "Tracking Map, quality ";
+                if(mTrackingQuality == GOOD)  mMessageForUser << "good.";
+                if(mTrackingQuality == DODGY) mMessageForUser << "poor.";
+                if(mTrackingQuality == BAD)   mMessageForUser << "bad.";
+                mMessageForUser << " Found:";
+                for(int i=0; i<LEVELS; i++) {
+                    mMessageForUser << " " << manMeasFound[i] << "/" << manMeasAttempted[i];
+                }
+                mMessageForUser << " Map " << mpMap->MapID() << ": "
+                                << mpMap->vpPoints.size() << "P, " << mpMap->vpKeyFrames.size() << "KF";
+            }
 
-	// GUI interface
-	while(!mvQueuedCommands.empty())
-	{
-		ROS_DEBUG("Pending commands!");
-		GUICommandHandler(mvQueuedCommands.begin()->sCommand, mvQueuedCommands.begin()->sParams);
-		mvQueuedCommands.erase(mvQueuedCommands.begin());
-	}
-};
+            /*/ Heuristics to check if a key-frame should be added to the map:
+              if(mTrackingQuality == GOOD && (forceKF || (
+                 mMapMaker.NeedNewKeyFrame(mCurrentKF) &&
+                 mnFrame - mnLastKeyFrameDropped > FRAMES_BETWEEN_KEYFRAMES  &&
+                 mMapMaker.QueueSize() < 3)))
+                {
+                  mMessageForUser << " Adding key-frame.";
+                  AddNewKeyFrame();
+                  forceKF = false;
+                };*/
+
+        }
+        else  // what if there is a map, but tracking has been lost?
+        {
+            ROS_ERROR("TRACK FRAME - 8");
+            tryToRecover();
+        }
+    }
+    else{ // If there is no map, try to make one.
+        ROS_ERROR("TRACK FRAME - 9");
+        TrackForInitialMap();
+    }
+
+    // GUI interface
+    while(!mvQueuedCommands.empty())
+    {
+        ROS_ERROR("TRACK FRAME - 10");
+        ROS_DEBUG("Pending commands!");
+        GUICommandHandler(mvQueuedCommands.begin()->sCommand, mvQueuedCommands.begin()->sParams);
+        mvQueuedCommands.erase(mvQueuedCommands.begin());
+    }
+}
 
 void Tracker::tryToRecover()
 {
-	if(mpMap->IsGood())
-	{
-		mMessageForUser.str("");
-		mMessageForUser << "** Attempting recovery **.";
-		if(AttemptRecovery())
-		{
-			TrackMap();
-			AssessTrackingQuality();
+    if(mpMap->IsGood())
+    {
+        mMessageForUser.str("");
+        mMessageForUser << "** Attempting recovery **.";
+        if(AttemptRecovery())
+        {
+            TrackMap();
+            AssessTrackingQuality();
 
-			if(mTrackingQuality == GOOD)
-				lastStepResult = T_RECOVERED_GOOD;
-			if(mTrackingQuality == DODGY)
-				lastStepResult = T_RECOVERED_DODGY;
-			if(mTrackingQuality == BAD)
-				lastStepResult = T_LOST;
-		}
-		else
-			lastStepResult = T_LOST;
-	}
+            if(mTrackingQuality == GOOD)
+                lastStepResult = T_RECOVERED_GOOD;
+            if(mTrackingQuality == DODGY)
+                lastStepResult = T_RECOVERED_DODGY;
+            if(mTrackingQuality == BAD)
+                lastStepResult = T_LOST;
+        }
+        else
+            lastStepResult = T_LOST;
+    }
 }
 
 void Tracker::TakeKF(bool force)
 {
     //ROS_DEBUG("Tracker::TakeKF:: took out one of the heuristics, return it back!");
-	if(mpMap->IsGood())
-	{
-		// Heuristics to check if a key-frame should be added to the map:
-		if(mTrackingQuality == GOOD && (force || (
-				mMapMaker.NeedNewKeyFrame(mCurrentKF) &&
-				((double)(clock() - mnLastKeyFrameDroppedClock))/CLOCKS_PER_SEC > minKFTimeDist &&
-				mpMap->QueueSize() < 3)))  //TODO: It used to be this --> mMapMaker.QueueSize() < 3
-		{
-			mMessageForUser << " Adding key-frame.";
-			AddNewKeyFrame();
-			lastStepResult = T_TOOK_KF;
-		};
-	}
+    if(mpMap->IsGood())
+    {
+        // Heuristics to check if a key-frame should be added to the map:
+        if(mTrackingQuality == GOOD && (force || (
+                                            mMapMaker.NeedNewKeyFrame(mCurrentKF) &&
+                                            ((double)(clock() - mnLastKeyFrameDroppedClock))/CLOCKS_PER_SEC > minKFTimeDist &&
+                                            mpMap->QueueSize() < 3)))  //TODO: It used to be this --> mMapMaker.QueueSize() < 3
+        {
+            mMessageForUser << " Adding key-frame.";
+            AddNewKeyFrame();
+            lastStepResult = T_TOOK_KF;
+        };
+    }
 }
 
 /**
@@ -268,15 +281,15 @@ void Tracker::TakeKF(bool force)
  */
 bool Tracker::AttemptRecovery()
 {
-	bool bRelocGood = mRelocaliser.AttemptRecovery(*mpMap, mCurrentKF);		//TODO: I added the mpMap pointer as the current map
-	if(!bRelocGood)
-		return false;
+    bool bRelocGood = mRelocaliser.AttemptRecovery(*mpMap, mCurrentKF);		//TODO: I added the mpMap pointer as the current map
+    if(!bRelocGood)
+        return false;
 
-	SE3<> se3Best = mRelocaliser.BestPose();
-	mse3CamFromWorld = mse3StartPos = se3Best;
-	mv6CameraVelocity = Zeros;
-	mbJustRecoveredSoUseCoarse = true;
-	return true;
+    SE3<> se3Best = mRelocaliser.BestPose();
+    mse3CamFromWorld = mse3StartPos = se3Best;
+    mv6CameraVelocity = Zeros;
+    mbJustRecoveredSoUseCoarse = true;
+    return true;
 }
 
 /**
@@ -289,10 +302,10 @@ bool Tracker::AttemptRecovery()
  */
 void Tracker::GUICommandCallBack(void* ptr, string sCommand, string sParams)
 {
-	Command c;
-	c.sCommand = sCommand;
-	c.sParams = sParams;
-	((Tracker*) ptr)->mvQueuedCommands.push_back(c);
+    Command c;
+    c.sCommand = sCommand;
+    c.sParams = sParams;
+    ((Tracker*) ptr)->mvQueuedCommands.push_back(c);
 }
 
 
@@ -303,37 +316,37 @@ void Tracker::GUICommandCallBack(void* ptr, string sCommand, string sParams)
  */
 void Tracker::GUICommandHandler(string sCommand, string sParams)  // Called by the callback func..
 {
-	if(sCommand=="Reset")
-	{
-		Reset();
-		return;
-	}
+    if(sCommand=="Reset")
+    {
+        Reset();
+        return;
+    }
 
-	// KeyPress commands are issued by GLWindow
-	if(sCommand=="KeyPress")
-	{
-		if(sParams == "Space")
-		{
-			mbUserPressedSpacebar = true;
-		}
-		else if(sParams == "r")
-		{
-			Reset();
-		}
-		else if(sParams == "q" || sParams == "Escape")
-		{
-			GUI.ParseLine("quit");
-		}
-		return;
-	}
-	if((sCommand=="PokeTracker"))
-	{
-		mbUserPressedSpacebar = true;
-		return;
-	}
+    // KeyPress commands are issued by GLWindow
+    if(sCommand=="KeyPress")
+    {
+        if(sParams == "Space")
+        {
+            mbUserPressedSpacebar = true;
+        }
+        else if(sParams == "r")
+        {
+            Reset();
+        }
+        else if(sParams == "q" || sParams == "Escape")
+        {
+            GUI.ParseLine("quit");
+        }
+        return;
+    }
+    if((sCommand=="PokeTracker"))
+    {
+        mbUserPressedSpacebar = true;
+        return;
+    }
 
-	cout << "! Tracker::GUICommandHandler: unhandled command "<< sCommand << endl;
-	exit(1);
+    cout << "! Tracker::GUICommandHandler: unhandled command "<< sCommand << endl;
+    exit(1);
 }
 
 
@@ -345,19 +358,19 @@ void Tracker::GUICommandHandler(string sCommand, string sParams)  // Called by t
  */
 bool Tracker::HandleKeyPress( string sKey )
 {
-	// KeyPress commands are issued by GLWindow, and passed to Tracker via System
-	if(sKey == "Space")
-	{
-		mbUserPressedSpacebar = true;
-		return true;
-	}
-	else if(sKey == "r")
-	{
-		Reset();
-		return true;
-	}
+    // KeyPress commands are issued by GLWindow, and passed to Tracker via System
+    if(sKey == "Space")
+    {
+        mbUserPressedSpacebar = true;
+        return true;
+    }
+    else if(sKey == "r")
+    {
+        Reset();
+        return true;
+    }
 
-	return false;
+    return false;
 }
 
 
@@ -371,58 +384,58 @@ bool Tracker::HandleKeyPress( string sKey )
  */
 void Tracker::TrackForInitialMap()
 {
-	// MiniPatch tracking threshhold.
-	static gvar3<int> gvnMaxSSD("Tracker.MiniPatchMaxSSD", TRACKER_MINIPATCH_MAX_SSD_DEFAULT, SILENT);
-	MiniPatch::mnMaxSSD = *gvnMaxSSD;
+    // MiniPatch tracking threshhold.
+    static gvar3<int> gvnMaxSSD("Tracker.MiniPatchMaxSSD", TRACKER_MINIPATCH_MAX_SSD_DEFAULT, SILENT);
+    MiniPatch::mnMaxSSD = *gvnMaxSSD;
 
-	// What stage of initial tracking are we at?
-	if(mnInitialStage == TRAIL_TRACKING_NOT_STARTED)
-	{
-		if(mbUserPressedSpacebar)  // First spacebar = this is the first keyframe
-		{
-			mbUserPressedSpacebar = false;
-			TrailTracking_Start();
-			mnInitialStage = TRAIL_TRACKING_STARTED;
-			lastStepResult = I_FIRST;
-			KFZeroDesiredCamFromWorld = predictedCFromW;
-		}
-		else{
-			lastStepResult = NOT_TRACKING;
-			mMessageForUser << "Point camera at planar scene and press spacebar to start tracking for initial map.";
-		}
-		return;
-	};
+    // What stage of initial tracking are we at?
+    if(mnInitialStage == TRAIL_TRACKING_NOT_STARTED)
+    {
+        if(mbUserPressedSpacebar)  // First spacebar = this is the first keyframe
+        {
+            mbUserPressedSpacebar = false;
+            TrailTracking_Start();
+            mnInitialStage = TRAIL_TRACKING_STARTED;
+            lastStepResult = I_FIRST;
+            KFZeroDesiredCamFromWorld = predictedCFromW;
+        }
+        else{
+            lastStepResult = NOT_TRACKING;
+            mMessageForUser << "Point camera at planar scene and press spacebar to start tracking for initial map.";
+        }
+        return;
+    };
 
-	if(mnInitialStage == TRAIL_TRACKING_STARTED)
-	{
-		int nGoodTrails = TrailTracking_Advance();  // This call actually tracks the trails
-		if(nGoodTrails < 10) // if most trails have been wiped out, no point continuing.
-		{
-			Reset();
-			lastStepResult = NOT_TRACKING;
-			return;
-		}
+    if(mnInitialStage == TRAIL_TRACKING_STARTED)
+    {
+        int nGoodTrails = TrailTracking_Advance();  // This call actually tracks the trails
+        if(nGoodTrails < 10) // if most trails have been wiped out, no point continuing.
+        {
+            Reset();
+            lastStepResult = NOT_TRACKING;
+            return;
+        }
 
-		// If the user pressed spacebar here, use trails to run stereo and make the intial map..
-		if(mbUserPressedSpacebar)
-		{
-			mbUserPressedSpacebar = false;
-			vector<pair<ImageRef, ImageRef> > vMatches;   // This is the format the mapmaker wants for the stereo pairs
-			for(list<Trail>::iterator i = mlTrails.begin(); i!=mlTrails.end(); i++)
-				vMatches.push_back(pair<ImageRef, ImageRef>(i->irInitialPos, i->irCurrentPos));
-			bool succ = mMapMaker.InitFromStereo(mFirstKF, mCurrentKF, vMatches, mse3CamFromWorld, KFZeroDesiredCamFromWorld, predictedCFromW);  // This will take some time!
-			if(succ){
-				lastStepResult = I_SECOND;
-			}
-			else
-				lastStepResult = I_FAILED;
-			mnInitialStage = TRAIL_TRACKING_COMPLETE;
-		}
-		else{
-			lastStepResult = INITIALIZING;
-			mMessageForUser << "Translate the camera slowly sideways, and press spacebar again to perform stereo init.";
-		}
-	}
+        // If the user pressed spacebar here, use trails to run stereo and make the intial map..
+        if(mbUserPressedSpacebar)
+        {
+            mbUserPressedSpacebar = false;
+            vector<pair<ImageRef, ImageRef> > vMatches;   // This is the format the mapmaker wants for the stereo pairs
+            for(list<Trail>::iterator i = mlTrails.begin(); i!=mlTrails.end(); i++)
+                vMatches.push_back(pair<ImageRef, ImageRef>(i->irInitialPos, i->irCurrentPos));
+            bool succ = mMapMaker.InitFromStereo(mFirstKF, mCurrentKF, vMatches, mse3CamFromWorld, KFZeroDesiredCamFromWorld, predictedCFromW);  // This will take some time!
+            if(succ){
+                lastStepResult = I_SECOND;
+            }
+            else
+                lastStepResult = I_FAILED;
+            mnInitialStage = TRAIL_TRACKING_COMPLETE;
+        }
+        else{
+            lastStepResult = INITIALIZING;
+            mMessageForUser << "Translate the camera slowly sideways, and press spacebar again to perform stereo init.";
+        }
+    }
 }
 
 /**
@@ -430,30 +443,30 @@ void Tracker::TrackForInitialMap()
  */
 void Tracker::TrailTracking_Start()
 {
-	mCurrentKF.MakeKeyFrame_Rest();  // This populates the Candidates list, which is Shi-Tomasi thresholded.
-	mFirstKF = mCurrentKF;
-	vector<pair<double,ImageRef> > vCornersAndSTScores;
-	for(unsigned int i=0; i<mCurrentKF.aLevels[0].vCandidates.size(); i++)  // Copy candidates into a trivially sortable vector
-	{                                                                     // so that we can choose the image corners with max ST score
-		Candidate &c = mCurrentKF.aLevels[0].vCandidates[i];
-		if(!mCurrentKF.aLevels[0].im.in_image_with_border(c.irLevelPos, MiniPatch::mnHalfPatchSize))
-			continue;
-		vCornersAndSTScores.push_back(pair<double,ImageRef>(-1.0 * c.dSTScore, c.irLevelPos)); // negative so highest score first in sorted list
-	};
-	sort(vCornersAndSTScores.begin(), vCornersAndSTScores.end());  // Sort according to Shi-Tomasi score
-	int nToAdd = GV2.GetInt("MaxInitialTrails", 1000, SILENT);
-	for(unsigned int i = 0; i<vCornersAndSTScores.size() && nToAdd > 0; i++)
-	{
-		if(!mCurrentKF.aLevels[0].im.in_image_with_border(vCornersAndSTScores[i].second, MiniPatch::mnHalfPatchSize))
-			continue;
-		Trail t;
-		t.mPatch.SampleFromImage(vCornersAndSTScores[i].second, mCurrentKF.aLevels[0].im);
-		t.irInitialPos = vCornersAndSTScores[i].second;
-		t.irCurrentPos = t.irInitialPos;
-		mlTrails.push_back(t);
-		nToAdd--;
-	}
-	mPreviousFrameKF = mFirstKF;  // Always store the previous frame so married-matching can work.
+    mCurrentKF.MakeKeyFrame_Rest();  // This populates the Candidates list, which is Shi-Tomasi thresholded.
+    mFirstKF = mCurrentKF;
+    vector<pair<double,ImageRef> > vCornersAndSTScores;
+    for(unsigned int i=0; i<mCurrentKF.aLevels[0].vCandidates.size(); i++)  // Copy candidates into a trivially sortable vector
+    {                                                                     // so that we can choose the image corners with max ST score
+        Candidate &c = mCurrentKF.aLevels[0].vCandidates[i];
+        if(!mCurrentKF.aLevels[0].im.in_image_with_border(c.irLevelPos, MiniPatch::mnHalfPatchSize))
+            continue;
+        vCornersAndSTScores.push_back(pair<double,ImageRef>(-1.0 * c.dSTScore, c.irLevelPos)); // negative so highest score first in sorted list
+    };
+    sort(vCornersAndSTScores.begin(), vCornersAndSTScores.end());  // Sort according to Shi-Tomasi score
+    int nToAdd = GV2.GetInt("MaxInitialTrails", 1000, SILENT);
+    for(unsigned int i = 0; i<vCornersAndSTScores.size() && nToAdd > 0; i++)
+    {
+        if(!mCurrentKF.aLevels[0].im.in_image_with_border(vCornersAndSTScores[i].second, MiniPatch::mnHalfPatchSize))
+            continue;
+        Trail t;
+        t.mPatch.SampleFromImage(vCornersAndSTScores[i].second, mCurrentKF.aLevels[0].im);
+        t.irInitialPos = vCornersAndSTScores[i].second;
+        t.irCurrentPos = t.irInitialPos;
+        mlTrails.push_back(t);
+        nToAdd--;
+    }
+    mPreviousFrameKF = mFirstKF;  // Always store the previous frame so married-matching can work.
 }
 
 /**
@@ -462,63 +475,63 @@ void Tracker::TrailTracking_Start()
  */
 int Tracker::TrailTracking_Advance()
 {
-	int nGoodTrails = 0;
-	if(mbDraw)
-	{
-		glPointSize(5);
-		glLineWidth(2);
-		glEnable(GL_POINT_SMOOTH);
-		glEnable(GL_LINE_SMOOTH);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_BLEND);
-		glBegin(GL_LINES);
-	}
+    int nGoodTrails = 0;
+    if(mbDraw)
+    {
+        glPointSize(5);
+        glLineWidth(2);
+        glEnable(GL_POINT_SMOOTH);
+        glEnable(GL_LINE_SMOOTH);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_BLEND);
+        glBegin(GL_LINES);
+    }
 
-	MiniPatch BackwardsPatch;
-	Level &lCurrentFrame = mCurrentKF.aLevels[0];
-	Level &lPreviousFrame = mPreviousFrameKF.aLevels[0];
+    MiniPatch BackwardsPatch;
+    Level &lCurrentFrame = mCurrentKF.aLevels[0];
+    Level &lPreviousFrame = mPreviousFrameKF.aLevels[0];
 
-	for(list<Trail>::iterator i = mlTrails.begin(); i!=mlTrails.end();)
-	{
-		list<Trail>::iterator next = i; next++;
+    for(list<Trail>::iterator i = mlTrails.begin(); i!=mlTrails.end();)
+    {
+        list<Trail>::iterator next = i; next++;
 
-		Trail &trail = *i;
-		ImageRef irStart = trail.irCurrentPos;
-		ImageRef irEnd = irStart;
-		bool bFound = trail.mPatch.FindPatch(irEnd, lCurrentFrame.im, 10, lCurrentFrame.vCorners);
-		if(bFound)
-		{
-			// Also find backwards in a married-matches check
-			BackwardsPatch.SampleFromImage(irEnd, lCurrentFrame.im);
-			ImageRef irBackWardsFound = irEnd;
-			bFound = BackwardsPatch.FindPatch(irBackWardsFound, lPreviousFrame.im, 10, lPreviousFrame.vCorners);
-			if((irBackWardsFound - irStart).mag_squared() > 2)
-				bFound = false;
+        Trail &trail = *i;
+        ImageRef irStart = trail.irCurrentPos;
+        ImageRef irEnd = irStart;
+        bool bFound = trail.mPatch.FindPatch(irEnd, lCurrentFrame.im, 10, lCurrentFrame.vCorners);
+        if(bFound)
+        {
+            // Also find backwards in a married-matches check
+            BackwardsPatch.SampleFromImage(irEnd, lCurrentFrame.im);
+            ImageRef irBackWardsFound = irEnd;
+            bFound = BackwardsPatch.FindPatch(irBackWardsFound, lPreviousFrame.im, 10, lPreviousFrame.vCorners);
+            if((irBackWardsFound - irStart).mag_squared() > 2)
+                bFound = false;
 
-			trail.irCurrentPos = irEnd;
-			nGoodTrails++;
-		}
-		if(mbDraw)
-		{
-			if(!bFound)
-				glColor3f(0,1,1); // Failed trails flash purple before dying.
-			else
-				glColor3f(1,1,0);
-			glVertex(trail.irInitialPos);
-			if(bFound) glColor3f(1,0,0);
-			glVertex(trail.irCurrentPos);
-		}
-		if(!bFound) // Erase from list of trails if not found this frame.
-		{
-			mlTrails.erase(i);
-		}
-		i = next;
-	}
-	if(mbDraw)
-		glEnd();
+            trail.irCurrentPos = irEnd;
+            nGoodTrails++;
+        }
+        if(mbDraw)
+        {
+            if(!bFound)
+                glColor3f(0,1,1); // Failed trails flash purple before dying.
+            else
+                glColor3f(1,1,0);
+            glVertex(trail.irInitialPos);
+            if(bFound) glColor3f(1,0,0);
+            glVertex(trail.irCurrentPos);
+        }
+        if(!bFound) // Erase from list of trails if not found this frame.
+        {
+            mlTrails.erase(i);
+        }
+        i = next;
+    }
+    if(mbDraw)
+        glEnd();
 
-	mPreviousFrameKF = mCurrentKF;
-	return nGoodTrails;
+    mPreviousFrameKF = mCurrentKF;
+    return nGoodTrails;
 }
 
 
@@ -536,303 +549,305 @@ int Tracker::TrailTracking_Advance()
  */
 void Tracker::TrackMap()
 {
-	// Some accounting which will be used for tracking quality assessment:
-	for(int i=0; i<LEVELS; i++)
-		manMeasAttempted[i] = manMeasFound[i] = 0;
+    mCamera = mPreviousFrameKF.Camera;
 
-	// The Potentially-Visible-Set (PVS) is split into pyramid levels.
-	vector<TrackerData*> avPVS[LEVELS];
-	for(int i=0; i<LEVELS; i++)
-		avPVS[i].reserve(500);
+    // Some accounting which will be used for tracking quality assessment:
+    for(int i=0; i<LEVELS; i++)
+        manMeasAttempted[i] = manMeasFound[i] = 0;
 
-	// For all points in the map..
-	for(unsigned int i=0; i<mpMap->vpPoints.size(); i++)
-	{
-		MapPoint &p= *(mpMap->vpPoints[i]);
-		// Ensure that this map point has an associated TrackerData struct.
-		if(!p.pTData) p.pTData = new TrackerData(&p);
-		TrackerData &TData = *p.pTData;
+    // The Potentially-Visible-Set (PVS) is split into pyramid levels.
+    vector<TrackerData*> avPVS[LEVELS];
+    for(int i=0; i<LEVELS; i++)
+        avPVS[i].reserve(500);
 
-		// Project according to current view, and if it's not in the image, skip.
-		TData.Project(mse3CamFromWorld, mCamera);
-		if(!TData.bInImage)
-			continue;
+    // For all points in the map..
+    for(unsigned int i=0; i<mpMap->vpPoints.size(); i++)
+    {
+        MapPoint &p= *(mpMap->vpPoints[i]);
+        // Ensure that this map point has an associated TrackerData struct.
+        if(!p.pTData) p.pTData = new TrackerData(&p);
+        TrackerData &TData = *p.pTData;
 
-		// Calculate camera projection derivatives of this point.
-		TData.GetDerivsUnsafe(mCamera);
+        // Project according to current view, and if it's not in the image, skip.
+        TData.Project(mse3CamFromWorld, mCamera);
+        if(!TData.bInImage)
+            continue;
 
-		// And check what the PatchFinder (included in TrackerData) makes of the mappoint in this view..
-		TData.nSearchLevel = TData.Finder.CalcSearchLevelAndWarpMatrix(TData.Point, mse3CamFromWorld, TData.m2CamDerivs);
-		if(TData.nSearchLevel == -1)
-			continue;   // a negative search pyramid level indicates an inappropriate warp for this view, so skip.
+        // Calculate camera projection derivatives of this point.
+        TData.GetDerivsUnsafe(mCamera);
 
-		// Otherwise, this point is suitable to be searched in the current image! Add to the PVS.
-		TData.bSearched = false;
-		TData.bFound = false;
-		avPVS[TData.nSearchLevel].push_back(&TData);
-	};
+        // And check what the PatchFinder (included in TrackerData) makes of the mappoint in this view..
+        TData.nSearchLevel = TData.Finder.CalcSearchLevelAndWarpMatrix(TData.Point, mse3CamFromWorld, TData.m2CamDerivs);
+        if(TData.nSearchLevel == -1)
+            continue;   // a negative search pyramid level indicates an inappropriate warp for this view, so skip.
 
-	// Next: A large degree of faffing about and deciding which points are going to be measured!
-	// First, randomly shuffle the individual levels of the PVS.
-	for(int i=0; i<LEVELS; i++)
-		random_shuffle(avPVS[i].begin(), avPVS[i].end());
+        // Otherwise, this point is suitable to be searched in the current image! Add to the PVS.
+        TData.bSearched = false;
+        TData.bFound = false;
+        avPVS[TData.nSearchLevel].push_back(&TData);
+    };
 
-	// The next two data structs contain the list of points which will next
-	// be searched for in the image, and then used in pose update.
-	vector<TrackerData*> vNextToSearch;
-	vector<TrackerData*> vIterationSet;
+    // Next: A large degree of faffing about and deciding which points are going to be measured!
+    // First, randomly shuffle the individual levels of the PVS.
+    for(int i=0; i<LEVELS; i++)
+        random_shuffle(avPVS[i].begin(), avPVS[i].end());
 
-	// Tunable parameters to do with the coarse tracking stage:
-	static gvar3<unsigned int> gvnCoarseMin("Tracker.CoarseMin", TRACKER_COARSE_MIN_DEFAULT, SILENT);   // Min number of large-scale features for coarse stage
-	static gvar3<unsigned int> gvnCoarseMax("Tracker.CoarseMax", TRACKER_COARSE_MAX_DEFAULT, SILENT);   // Max number of large-scale features for coarse stage
-	static gvar3<unsigned int> gvnCoarseRange("Tracker.CoarseRange", TRACKER_COARSE_RANGE_DEFAULT, SILENT);       // Pixel search radius for coarse features
-	static gvar3<int> gvnCoarseSubPixIts("Tracker.CoarseSubPixIts", TRACKER_COARSE_SUBPIXELITS_DEFAULT, SILENT); // Max sub-pixel iterations for coarse features
-	static gvar3<int> gvnCoarseDisabled("Tracker.DisableCoarse", TRACKER_COARSE_DISABLE_DEFAULT, SILENT);    // Set this to 1 to disable coarse stage (except after recovery)
-	static gvar3<double> gvdCoarseMinVel("Tracker.CoarseMinVelocity", TRACKER_COARSE_MIN_VELOCITY_DEFAULT, SILENT);  // Speed above which coarse stage is used.
+    // The next two data structs contain the list of points which will next
+    // be searched for in the image, and then used in pose update.
+    vector<TrackerData*> vNextToSearch;
+    vector<TrackerData*> vIterationSet;
 
-	unsigned int nCoarseMax = *gvnCoarseMax;
-	unsigned int nCoarseRange = *gvnCoarseRange;
+    // Tunable parameters to do with the coarse tracking stage:
+    static gvar3<unsigned int> gvnCoarseMin("Tracker.CoarseMin", TRACKER_COARSE_MIN_DEFAULT, SILENT);   // Min number of large-scale features for coarse stage
+    static gvar3<unsigned int> gvnCoarseMax("Tracker.CoarseMax", TRACKER_COARSE_MAX_DEFAULT, SILENT);   // Max number of large-scale features for coarse stage
+    static gvar3<unsigned int> gvnCoarseRange("Tracker.CoarseRange", TRACKER_COARSE_RANGE_DEFAULT, SILENT);       // Pixel search radius for coarse features
+    static gvar3<int> gvnCoarseSubPixIts("Tracker.CoarseSubPixIts", TRACKER_COARSE_SUBPIXELITS_DEFAULT, SILENT); // Max sub-pixel iterations for coarse features
+    static gvar3<int> gvnCoarseDisabled("Tracker.DisableCoarse", TRACKER_COARSE_DISABLE_DEFAULT, SILENT);    // Set this to 1 to disable coarse stage (except after recovery)
+    static gvar3<double> gvdCoarseMinVel("Tracker.CoarseMinVelocity", TRACKER_COARSE_MIN_VELOCITY_DEFAULT, SILENT);  // Speed above which coarse stage is used.
 
-	mbDidCoarse = false;
+    unsigned int nCoarseMax = *gvnCoarseMax;
+    unsigned int nCoarseRange = *gvnCoarseRange;
 
-	// Set of heuristics to check if we should do a coarse tracking stage.
-	bool bTryCoarse = true;
-	if(*gvnCoarseDisabled ||
-			mdMSDScaledVelocityMagnitude < *gvdCoarseMinVel  ||
-			nCoarseMax == 0)
-		bTryCoarse = false;
-	if(mbJustRecoveredSoUseCoarse)
-	{
-		bTryCoarse = true;
-		nCoarseMax *=2;
-		nCoarseRange *=2;
-		mbJustRecoveredSoUseCoarse = false;
-	};
+    mbDidCoarse = false;
 
-	// If we do want to do a coarse stage, also check that there's enough high-level
-	// PV map points. We use the lowest-res two pyramid levels (LEVELS-1 and LEVELS-2),
-	// with preference to LEVELS-1.
-	if(bTryCoarse && avPVS[LEVELS-1].size() + avPVS[LEVELS-2].size() > *gvnCoarseMin )
-	{
-		// Now, fill the vNextToSearch struct with an appropriate number of
-		// TrackerDatas corresponding to coarse map points! This depends on how many
-		// there are in different pyramid levels compared to CoarseMin and CoarseMax.
+    // Set of heuristics to check if we should do a coarse tracking stage.
+    bool bTryCoarse = true;
+    if(*gvnCoarseDisabled ||
+            mdMSDScaledVelocityMagnitude < *gvdCoarseMinVel  ||
+            nCoarseMax == 0)
+        bTryCoarse = false;
+    if(mbJustRecoveredSoUseCoarse)
+    {
+        bTryCoarse = true;
+        nCoarseMax *=2;
+        nCoarseRange *=2;
+        mbJustRecoveredSoUseCoarse = false;
+    };
 
-		if(avPVS[LEVELS-1].size() <= nCoarseMax)
-		{ // Fewer than CoarseMax in LEVELS-1? then take all of them, and remove them from the PVS list.
-			vNextToSearch = avPVS[LEVELS-1];
-			avPVS[LEVELS-1].clear();
-		}
-		else
-		{ // ..otherwise choose nCoarseMax at random, again removing from the PVS list.
-			for(unsigned int i=0; i<nCoarseMax; i++)
-				vNextToSearch.push_back(avPVS[LEVELS-1][i]);
-			avPVS[LEVELS-1].erase(avPVS[LEVELS-1].begin(), avPVS[LEVELS-1].begin() + nCoarseMax);
-		}
+    // If we do want to do a coarse stage, also check that there's enough high-level
+    // PV map points. We use the lowest-res two pyramid levels (LEVELS-1 and LEVELS-2),
+    // with preference to LEVELS-1.
+    if(bTryCoarse && avPVS[LEVELS-1].size() + avPVS[LEVELS-2].size() > *gvnCoarseMin )
+    {
+        // Now, fill the vNextToSearch struct with an appropriate number of
+        // TrackerDatas corresponding to coarse map points! This depends on how many
+        // there are in different pyramid levels compared to CoarseMin and CoarseMax.
 
-		// If didn't source enough from LEVELS-1, get some from LEVELS-2... same as above.
-		if(vNextToSearch.size() < nCoarseMax)
-		{
-			unsigned int nMoreCoarseNeeded = nCoarseMax - vNextToSearch.size();
-			if(avPVS[LEVELS-2].size() <= nMoreCoarseNeeded)
-			{
-				vNextToSearch = avPVS[LEVELS-2];
-				avPVS[LEVELS-2].clear();
-			}
-			else
-			{
-				for(unsigned int i=0; i<nMoreCoarseNeeded; i++)
-					vNextToSearch.push_back(avPVS[LEVELS-2][i]);
-				avPVS[LEVELS-2].erase(avPVS[LEVELS-2].begin(), avPVS[LEVELS-2].begin() + nMoreCoarseNeeded);
-			}
-		}
-		// Now go and attempt to find these points in the image!
-		unsigned int nFound = SearchForPoints(vNextToSearch, nCoarseRange, *gvnCoarseSubPixIts);
-		vIterationSet = vNextToSearch;  // Copy over into the to-be-optimised list.
-		if(nFound >= *gvnCoarseMin)  // Were enough found to do any meaningful optimisation?
-		{
-			mbDidCoarse = true;
-			for(int iter = 0; iter<10; iter++) // If so: do ten Gauss-Newton pose updates iterations.
-			{
-				if(iter != 0)
-				{ // Re-project the points on all but the first iteration.
-					for(unsigned int i=0; i<vIterationSet.size(); i++)
-						if(vIterationSet[i]->bFound)
-							vIterationSet[i]->ProjectAndDerivs(mse3CamFromWorld, mCamera);
-				}
-				for(unsigned int i=0; i<vIterationSet.size(); i++)
-					if(vIterationSet[i]->bFound)
-						vIterationSet[i]->CalcJacobian();
-				double dOverrideSigma = 0.0;
-				// Hack: force the MEstimator to be pretty brutal
-				// with outliers beyond the fifth iteration.
-				if(iter > 5)
-					dOverrideSigma = 1.0;
+        if(avPVS[LEVELS-1].size() <= nCoarseMax)
+        { // Fewer than CoarseMax in LEVELS-1? then take all of them, and remove them from the PVS list.
+            vNextToSearch = avPVS[LEVELS-1];
+            avPVS[LEVELS-1].clear();
+        }
+        else
+        { // ..otherwise choose nCoarseMax at random, again removing from the PVS list.
+            for(unsigned int i=0; i<nCoarseMax; i++)
+                vNextToSearch.push_back(avPVS[LEVELS-1][i]);
+            avPVS[LEVELS-1].erase(avPVS[LEVELS-1].begin(), avPVS[LEVELS-1].begin() + nCoarseMax);
+        }
 
-				// Calculate and apply the pose update...
-				Vector<6> v6Update =
-						CalcPoseUpdate(vIterationSet, dOverrideSigma);
-				mse3CamFromWorld = SE3<>::exp(v6Update) * mse3CamFromWorld;
-			};
-		}
-	};
+        // If didn't source enough from LEVELS-1, get some from LEVELS-2... same as above.
+        if(vNextToSearch.size() < nCoarseMax)
+        {
+            unsigned int nMoreCoarseNeeded = nCoarseMax - vNextToSearch.size();
+            if(avPVS[LEVELS-2].size() <= nMoreCoarseNeeded)
+            {
+                vNextToSearch = avPVS[LEVELS-2];
+                avPVS[LEVELS-2].clear();
+            }
+            else
+            {
+                for(unsigned int i=0; i<nMoreCoarseNeeded; i++)
+                    vNextToSearch.push_back(avPVS[LEVELS-2][i]);
+                avPVS[LEVELS-2].erase(avPVS[LEVELS-2].begin(), avPVS[LEVELS-2].begin() + nMoreCoarseNeeded);
+            }
+        }
+        // Now go and attempt to find these points in the image!
+        unsigned int nFound = SearchForPoints(vNextToSearch, nCoarseRange, *gvnCoarseSubPixIts);
+        vIterationSet = vNextToSearch;  // Copy over into the to-be-optimised list.
+        if(nFound >= *gvnCoarseMin)  // Were enough found to do any meaningful optimisation?
+        {
+            mbDidCoarse = true;
+            for(int iter = 0; iter<10; iter++) // If so: do ten Gauss-Newton pose updates iterations.
+            {
+                if(iter != 0)
+                { // Re-project the points on all but the first iteration.
+                    for(unsigned int i=0; i<vIterationSet.size(); i++)
+                        if(vIterationSet[i]->bFound)
+                            vIterationSet[i]->ProjectAndDerivs(mse3CamFromWorld, mCamera);
+                }
+                for(unsigned int i=0; i<vIterationSet.size(); i++)
+                    if(vIterationSet[i]->bFound)
+                        vIterationSet[i]->CalcJacobian();
+                double dOverrideSigma = 0.0;
+                // Hack: force the MEstimator to be pretty brutal
+                // with outliers beyond the fifth iteration.
+                if(iter > 5)
+                    dOverrideSigma = 1.0;
 
-	// So, at this stage, we may or may not have done a coarse tracking stage.
-	// Now do the fine tracking stage. This needs many more points!
+                // Calculate and apply the pose update...
+                Vector<6> v6Update =
+                        CalcPoseUpdate(vIterationSet, dOverrideSigma);
+                mse3CamFromWorld = SE3<>::exp(v6Update) * mse3CamFromWorld;
+            };
+        }
+    };
 
-	int nFineRange = 10;  // Pixel search range for the fine stage.
-	if(mbDidCoarse)       // Can use a tighter search if the coarse stage was already done.
-		nFineRange = 5;
+    // So, at this stage, we may or may not have done a coarse tracking stage.
+    // Now do the fine tracking stage. This needs many more points!
 
-	// What patches shall we use this time? The high-level ones are quite important,
-	// so do all of these, with sub-pixel refinement.
-	{
-		int l = LEVELS - 1;
-		for(unsigned int i=0; i<avPVS[l].size(); i++)
-			avPVS[l][i]->ProjectAndDerivs(mse3CamFromWorld, mCamera);
-		SearchForPoints(avPVS[l], nFineRange, 8);
-		for(unsigned int i=0; i<avPVS[l].size(); i++)
-			vIterationSet.push_back(avPVS[l][i]);  // Again, plonk all searched points onto the (maybe already populate) vIterationSet.
-	};
+    int nFineRange = 10;  // Pixel search range for the fine stage.
+    if(mbDidCoarse)       // Can use a tighter search if the coarse stage was already done.
+        nFineRange = 5;
 
-	// All the others levels: Initially, put all remaining potentially visible patches onto vNextToSearch.
-	vNextToSearch.clear();
-	for(int l=LEVELS - 2; l>=0; l--)
-		for(unsigned int i=0; i<avPVS[l].size(); i++)
-			vNextToSearch.push_back(avPVS[l][i]);
+    // What patches shall we use this time? The high-level ones are quite important,
+    // so do all of these, with sub-pixel refinement.
+    {
+        int l = LEVELS - 1;
+        for(unsigned int i=0; i<avPVS[l].size(); i++)
+            avPVS[l][i]->ProjectAndDerivs(mse3CamFromWorld, mCamera);
+        SearchForPoints(avPVS[l], nFineRange, 8);
+        for(unsigned int i=0; i<avPVS[l].size(); i++)
+            vIterationSet.push_back(avPVS[l][i]);  // Again, plonk all searched points onto the (maybe already populate) vIterationSet.
+    };
 
-	// But we haven't got CPU to track _all_ patches in the map - arbitrarily limit
-	// ourselves to 1000, and choose these randomly.
-	static gvar3<int> gvnMaxPatchesPerFrame("Tracker.MaxPatchesPerFrame", TRACKER_MAX_PATCHES_PER_FRAME_DEFAULT, SILENT);
-	int nFinePatchesToUse = *gvnMaxPatchesPerFrame - static_cast<int>(vIterationSet.size());
-	if(nFinePatchesToUse < 0)
-		nFinePatchesToUse = 0;
-	if((int) vNextToSearch.size() > nFinePatchesToUse)
-	{
-		random_shuffle(vNextToSearch.begin(), vNextToSearch.end());
-		vNextToSearch.resize(nFinePatchesToUse); // Chop!
-	};
+    // All the others levels: Initially, put all remaining potentially visible patches onto vNextToSearch.
+    vNextToSearch.clear();
+    for(int l=LEVELS - 2; l>=0; l--)
+        for(unsigned int i=0; i<avPVS[l].size(); i++)
+            vNextToSearch.push_back(avPVS[l][i]);
 
-	// If we did a coarse tracking stage: re-project and find derivs of fine points
-	if(mbDidCoarse)
-		for(unsigned int i=0; i<vNextToSearch.size(); i++)
-			vNextToSearch[i]->ProjectAndDerivs(mse3CamFromWorld, mCamera);
+    // But we haven't got CPU to track _all_ patches in the map - arbitrarily limit
+    // ourselves to 1000, and choose these randomly.
+    static gvar3<int> gvnMaxPatchesPerFrame("Tracker.MaxPatchesPerFrame", TRACKER_MAX_PATCHES_PER_FRAME_DEFAULT, SILENT);
+    int nFinePatchesToUse = *gvnMaxPatchesPerFrame - static_cast<int>(vIterationSet.size());
+    if(nFinePatchesToUse < 0)
+        nFinePatchesToUse = 0;
+    if((int) vNextToSearch.size() > nFinePatchesToUse)
+    {
+        random_shuffle(vNextToSearch.begin(), vNextToSearch.end());
+        vNextToSearch.resize(nFinePatchesToUse); // Chop!
+    };
 
-	// Find fine points in image:
-	SearchForPoints(vNextToSearch, nFineRange, 0);
-	// And attach them all to the end of the optimisation-set.
-	for(unsigned int i=0; i<vNextToSearch.size(); i++)
-		vIterationSet.push_back(vNextToSearch[i]);
+    // If we did a coarse tracking stage: re-project and find derivs of fine points
+    if(mbDidCoarse)
+        for(unsigned int i=0; i<vNextToSearch.size(); i++)
+            vNextToSearch[i]->ProjectAndDerivs(mse3CamFromWorld, mCamera);
 
-	// Again, ten gauss-newton pose update iterations.
-	Vector<6> v6LastUpdate;
-	v6LastUpdate = Zeros;
-	for(int iter = 0; iter<10; iter++)
-	{
-		bool bNonLinearIteration; // For a bit of time-saving: don't do full nonlinear
-		// reprojection at every iteration - it really isn't necessary!
-		if(iter == 0 || iter == 4 || iter == 9)
-			bNonLinearIteration = true;   // Even this is probably overkill, the reason we do many
-		else                            // iterations is for M-Estimator convergence rather than
-			bNonLinearIteration = false;  // linearisation effects.
+    // Find fine points in image:
+    SearchForPoints(vNextToSearch, nFineRange, 0);
+    // And attach them all to the end of the optimisation-set.
+    for(unsigned int i=0; i<vNextToSearch.size(); i++)
+        vIterationSet.push_back(vNextToSearch[i]);
 
-		if(iter != 0)   // Either way: first iteration doesn't need projection update.
-		{
-			if(bNonLinearIteration)
-			{
-				for(unsigned int i=0; i<vIterationSet.size(); i++)
-					if(vIterationSet[i]->bFound)
-						vIterationSet[i]->ProjectAndDerivs(mse3CamFromWorld, mCamera);
-			}
-			else
-			{
-				for(unsigned int i=0; i<vIterationSet.size(); i++)
-					if(vIterationSet[i]->bFound)
-						vIterationSet[i]->LinearUpdate(v6LastUpdate);
-			};
-		}
+    // Again, ten gauss-newton pose update iterations.
+    Vector<6> v6LastUpdate;
+    v6LastUpdate = Zeros;
+    for(int iter = 0; iter<10; iter++)
+    {
+        bool bNonLinearIteration; // For a bit of time-saving: don't do full nonlinear
+        // reprojection at every iteration - it really isn't necessary!
+        if(iter == 0 || iter == 4 || iter == 9)
+            bNonLinearIteration = true;   // Even this is probably overkill, the reason we do many
+        else                            // iterations is for M-Estimator convergence rather than
+            bNonLinearIteration = false;  // linearisation effects.
 
-		if(bNonLinearIteration)
-			for(unsigned int i=0; i<vIterationSet.size(); i++)
-				if(vIterationSet[i]->bFound)
-					vIterationSet[i]->CalcJacobian();
+        if(iter != 0)   // Either way: first iteration doesn't need projection update.
+        {
+            if(bNonLinearIteration)
+            {
+                for(unsigned int i=0; i<vIterationSet.size(); i++)
+                    if(vIterationSet[i]->bFound)
+                        vIterationSet[i]->ProjectAndDerivs(mse3CamFromWorld, mCamera);
+            }
+            else
+            {
+                for(unsigned int i=0; i<vIterationSet.size(); i++)
+                    if(vIterationSet[i]->bFound)
+                        vIterationSet[i]->LinearUpdate(v6LastUpdate);
+            };
+        }
 
-		// Again, an M-Estimator hack beyond the fifth iteration.
-		double dOverrideSigma = 0.0;
-		if(iter > 5)
-			dOverrideSigma = 16.0;
+        if(bNonLinearIteration)
+            for(unsigned int i=0; i<vIterationSet.size(); i++)
+                if(vIterationSet[i]->bFound)
+                    vIterationSet[i]->CalcJacobian();
 
-		// Calculate and update pose; also store update vector for linear iteration updates.
-		Vector<6> v6Update =
-				CalcPoseUpdate(vIterationSet, dOverrideSigma, iter==9);
-		mse3CamFromWorld = SE3<>::exp(v6Update) * mse3CamFromWorld;
-		v6LastUpdate = v6Update;
-	};
+        // Again, an M-Estimator hack beyond the fifth iteration.
+        double dOverrideSigma = 0.0;
+        if(iter > 5)
+            dOverrideSigma = 16.0;
 
-	if(mbDraw)
-	{
-		glPointSize(6);
-		glEnable(GL_BLEND);
-		glEnable(GL_POINT_SMOOTH);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glBegin(GL_POINTS);
-		for(vector<TrackerData*>::reverse_iterator it = vIterationSet.rbegin();
-				it!= vIterationSet.rend();
-				it++)
-		{
-			if(! (*it)->bFound)
-				continue;
-			glColor(gavLevelColors[(*it)->nSearchLevel]);
-			glVertex((*it)->v2Image);
-		}
-		glEnd();
-		glDisable(GL_BLEND);
-	}
+        // Calculate and update pose; also store update vector for linear iteration updates.
+        Vector<6> v6Update =
+                CalcPoseUpdate(vIterationSet, dOverrideSigma, iter==9);
+        mse3CamFromWorld = SE3<>::exp(v6Update) * mse3CamFromWorld;
+        v6LastUpdate = v6Update;
+    };
 
-	// Update the current keyframe with info on what was found in the frame.
-	// Strictly speaking this is unnecessary to do every frame, it'll only be
-	// needed if the KF gets added to MapMaker. Do it anyway.
-	// Export pose to current keyframe:
-	mCurrentKF.se3CfromW = mse3CamFromWorld;
+    if(mbDraw)
+    {
+        glPointSize(6);
+        glEnable(GL_BLEND);
+        glEnable(GL_POINT_SMOOTH);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBegin(GL_POINTS);
+        for(vector<TrackerData*>::reverse_iterator it = vIterationSet.rbegin();
+            it!= vIterationSet.rend();
+            it++)
+        {
+            if(! (*it)->bFound)
+                continue;
+            glColor(gavLevelColors[(*it)->nSearchLevel]);
+            glVertex((*it)->v2Image);
+        }
+        glEnd();
+        glDisable(GL_BLEND);
+    }
 
-	// Record successful measurements. Use the KeyFrame-Measurement struct for this.
-	mCurrentKF.mMeasurements.clear();
-	for(vector<TrackerData*>::iterator it = vIterationSet.begin();
-			it!= vIterationSet.end();
-			it++)
-	{
-		if(! (*it)->bFound)
-			continue;
-		Measurement m;
-		m.v2RootPos = (*it)->v2Found;
-		m.v2ImplanePos = mCamera.UnProject(m.v2RootPos);
-		m.m2CamDerivs = mCamera.GetProjectionDerivs();
-		m.nLevel = (*it)->nSearchLevel;
-		m.bSubPix = (*it)->bDidSubPix;
-		mCurrentKF.mMeasurements[& ((*it)->Point)] = m;
-	}
+    // Update the current keyframe with info on what was found in the frame.
+    // Strictly speaking this is unnecessary to do every frame, it'll only be
+    // needed if the KF gets added to MapMaker. Do it anyway.
+    // Export pose to current keyframe:
+    mCurrentKF.se3CfromW = mse3CamFromWorld;
 
-	// Finally, find the mean scene depth from tracked features
-	{
-		double dSum = 0;
-		double dSumSq = 0;
-		int nNum = 0;
-		for(vector<TrackerData*>::iterator it = vIterationSet.begin();
-				it!= vIterationSet.end();
-				it++)
-			if((*it)->bFound)
-			{
-				double z = (*it)->v3Cam[2];
-				dSum+= z;
-				dSumSq+= z*z;
-				nNum++;
-			};
-		if(nNum > 20)
-		{
-			mCurrentKF.dSceneDepthMean = dSum/nNum;
-			mCurrentKF.dSceneDepthSigma = sqrt((dSumSq / nNum) - (mCurrentKF.dSceneDepthMean) * (mCurrentKF.dSceneDepthMean));
-		}
-	}
+    // Record successful measurements. Use the KeyFrame-Measurement struct for this.
+    mCurrentKF.mMeasurements.clear();
+    for(vector<TrackerData*>::iterator it = vIterationSet.begin();
+        it!= vIterationSet.end();
+        it++)
+    {
+        if(! (*it)->bFound)
+            continue;
+        Measurement m;
+        m.v2RootPos = (*it)->v2Found;
+        m.v2ImplanePos = mCamera.UnProject(m.v2RootPos);
+        m.m2CamDerivs = mCamera.GetProjectionDerivs();
+        m.nLevel = (*it)->nSearchLevel;
+        m.bSubPix = (*it)->bDidSubPix;
+        mCurrentKF.mMeasurements[& ((*it)->Point)] = m;
+    }
+
+    // Finally, find the mean scene depth from tracked features
+    {
+        double dSum = 0;
+        double dSumSq = 0;
+        int nNum = 0;
+        for(vector<TrackerData*>::iterator it = vIterationSet.begin();
+            it!= vIterationSet.end();
+            it++)
+            if((*it)->bFound)
+            {
+                double z = (*it)->v3Cam[2];
+                dSum+= z;
+                dSumSq+= z*z;
+                nNum++;
+            };
+        if(nNum > 20)
+        {
+            mCurrentKF.dSceneDepthMean = dSum/nNum;
+            mCurrentKF.dSceneDepthSigma = sqrt((dSumSq / nNum) - (mCurrentKF.dSceneDepthMean) * (mCurrentKF.dSceneDepthMean));
+        }
+    }
 }
 
 /**
@@ -844,58 +859,58 @@ void Tracker::TrackMap()
  */
 int Tracker::SearchForPoints(vector<TrackerData*> &vTD, int nRange, int nSubPixIts)
 {
-	int nFound = 0;
-	for(unsigned int i=0; i<vTD.size(); i++)   // for each point..
-	{
-		// First, attempt a search at pixel locations which are FAST corners.
-		// (PatchFinder::FindPatchCoarse)
-		TrackerData &TD = *vTD[i];
-		PatchFinder &Finder = TD.Finder;
-		Finder.MakeTemplateCoarseCont(TD.Point);
-		if(Finder.TemplateBad())
-		{
-			TD.bInImage = TD.bPotentiallyVisible = TD.bFound = false;
-			continue;
-		}
-		manMeasAttempted[Finder.GetLevel()]++;  // Stats for tracking quality assessmenta
+    int nFound = 0;
+    for(unsigned int i=0; i<vTD.size(); i++)   // for each point..
+    {
+        // First, attempt a search at pixel locations which are FAST corners.
+        // (PatchFinder::FindPatchCoarse)
+        TrackerData &TD = *vTD[i];
+        PatchFinder &Finder = TD.Finder;
+        Finder.MakeTemplateCoarseCont(TD.Point);
+        if(Finder.TemplateBad())
+        {
+            TD.bInImage = TD.bPotentiallyVisible = TD.bFound = false;
+            continue;
+        }
+        manMeasAttempted[Finder.GetLevel()]++;  // Stats for tracking quality assessmenta
 
-		bool bFound =
-				Finder.FindPatchCoarse(ir(TD.v2Image), mCurrentKF, nRange);
-		TD.bSearched = true;
-		if(!bFound)
-		{
-			TD.bFound = false;
-			continue;
-		}
+        bool bFound =
+                Finder.FindPatchCoarse(ir(TD.v2Image), mCurrentKF, nRange);
+        TD.bSearched = true;
+        if(!bFound)
+        {
+            TD.bFound = false;
+            continue;
+        }
 
-		TD.bFound = true;
-		TD.dSqrtInvNoise = (1.0 / Finder.GetLevelScale());
+        TD.bFound = true;
+        TD.dSqrtInvNoise = (1.0 / Finder.GetLevelScale());
 
-		nFound++;
-		manMeasFound[Finder.GetLevel()]++;
+        nFound++;
+        manMeasFound[Finder.GetLevel()]++;
 
-		// Found the patch in coarse search - are Sub-pixel iterations wanted too?
-		if(nSubPixIts > 0)
-		{
-			TD.bDidSubPix = true;
-			Finder.MakeSubPixTemplate();
-			bool bSubPixConverges=Finder.IterateSubPixToConvergence(mCurrentKF, nSubPixIts);
-			if(!bSubPixConverges)
-			{ // If subpix doesn't converge, the patch location is probably very dubious!
-				TD.bFound = false;
-				nFound--;
-				manMeasFound[Finder.GetLevel()]--;
-				continue;
-			}
-			TD.v2Found = Finder.GetSubPixPos();
-		}
-		else
-		{
-			TD.v2Found = Finder.GetCoarsePosAsVector();
-			TD.bDidSubPix = false;
-		}
-	}
-	return nFound;
+        // Found the patch in coarse search - are Sub-pixel iterations wanted too?
+        if(nSubPixIts > 0)
+        {
+            TD.bDidSubPix = true;
+            Finder.MakeSubPixTemplate();
+            bool bSubPixConverges=Finder.IterateSubPixToConvergence(mCurrentKF, nSubPixIts);
+            if(!bSubPixConverges)
+            { // If subpix doesn't converge, the patch location is probably very dubious!
+                TD.bFound = false;
+                nFound--;
+                manMeasFound[Finder.GetLevel()]--;
+                continue;
+            }
+            TD.v2Found = Finder.GetSubPixPos();
+        }
+        else
+        {
+            TD.v2Found = Finder.GetCoarsePosAsVector();
+            TD.bDidSubPix = false;
+        }
+    }
+    return nFound;
 };
 
 
@@ -914,92 +929,92 @@ int Tracker::SearchForPoints(vector<TrackerData*> &vTD, int nRange, int nSubPixI
  */
 Vector<6> Tracker::CalcPoseUpdate(vector<TrackerData*> vTD, double dOverrideSigma, bool bMarkOutliers)
 {
-	// Which M-estimator are we using?
-	int nEstimator = 0;
-	static gvar3<string> gvsEstimator("TrackerMEstimator", TRACKER_M_ESTIMATOR_DEFAULT, SILENT);
-	if(*gvsEstimator == "Tukey")
-		nEstimator = 0;
-	else if(*gvsEstimator == "Cauchy")
-		nEstimator = 1;
-	else if(*gvsEstimator == "Huber")
-		nEstimator = 2;
-	else
-	{
-		cout << "Invalid TrackerMEstimator, choices are Tukey, Cauchy, Huber" << endl;
-		nEstimator = 0;
-		*gvsEstimator = "Tukey";
-	};
+    // Which M-estimator are we using?
+    int nEstimator = 0;
+    static gvar3<string> gvsEstimator("TrackerMEstimator", TRACKER_M_ESTIMATOR_DEFAULT, SILENT);
+    if(*gvsEstimator == "Tukey")
+        nEstimator = 0;
+    else if(*gvsEstimator == "Cauchy")
+        nEstimator = 1;
+    else if(*gvsEstimator == "Huber")
+        nEstimator = 2;
+    else
+    {
+        cout << "Invalid TrackerMEstimator, choices are Tukey, Cauchy, Huber" << endl;
+        nEstimator = 0;
+        *gvsEstimator = "Tukey";
+    };
 
-	// Find the covariance-scaled reprojection error for each measurement.
-	// Also, store the square of these quantities for M-Estimator sigma squared estimation.
-	vector<double> vdErrorSquared;
-	for(unsigned int f=0; f<vTD.size(); f++)
-	{
-		TrackerData &TD = *vTD[f];
-		if(!TD.bFound)
-			continue;
-		vdErrorSquared.push_back((double)(TD.v2Error_CovScaled * TD.v2Error_CovScaled));
-		vdErrorSquared.push_back(TD.v2Error_CovScaled * TD.v2Error_CovScaled);
-	};
+    // Find the covariance-scaled reprojection error for each measurement.
+    // Also, store the square of these quantities for M-Estimator sigma squared estimation.
+    vector<double> vdErrorSquared;
+    for(unsigned int f=0; f<vTD.size(); f++)
+    {
+        TrackerData &TD = *vTD[f];
+        if(!TD.bFound)
+            continue;
+        vdErrorSquared.push_back((double)(TD.v2Error_CovScaled * TD.v2Error_CovScaled));
+        vdErrorSquared.push_back(TD.v2Error_CovScaled * TD.v2Error_CovScaled);
+    };
 
-	// No valid measurements? Return null update.
-	if(vdErrorSquared.size() == 0)
-		return makeVector( 0,0,0,0,0,0);
+    // No valid measurements? Return null update.
+    if(vdErrorSquared.size() == 0)
+        return makeVector( 0,0,0,0,0,0);
 
-	// What is the distribution of errors?
-	double dSigmaSquared;
-	if(dOverrideSigma > 0)
-		dSigmaSquared = dOverrideSigma; // Bit of a waste having stored the vector of square errors in this case!
-	else
-	{
-		if (nEstimator == 0)
-			dSigmaSquared = Tukey::FindSigmaSquared(vdErrorSquared);
-		else if(nEstimator == 1)
-			dSigmaSquared = Cauchy::FindSigmaSquared(vdErrorSquared);
-		else
-			dSigmaSquared = Huber::FindSigmaSquared(vdErrorSquared);
-	}
+    // What is the distribution of errors?
+    double dSigmaSquared;
+    if(dOverrideSigma > 0)
+        dSigmaSquared = dOverrideSigma; // Bit of a waste having stored the vector of square errors in this case!
+    else
+    {
+        if (nEstimator == 0)
+            dSigmaSquared = Tukey::FindSigmaSquared(vdErrorSquared);
+        else if(nEstimator == 1)
+            dSigmaSquared = Cauchy::FindSigmaSquared(vdErrorSquared);
+        else
+            dSigmaSquared = Huber::FindSigmaSquared(vdErrorSquared);
+    }
 
-	// The TooN WLSCholesky class handles reweighted least squares.
-	// It just needs errors and jacobians.
-	WLS<6> wls;
-	wls.add_prior(100.0); // Stabilising prior
-	for(unsigned int f=0; f<vTD.size(); f++)
-	{
-		TrackerData &TD = *vTD[f];
-		if(!TD.bFound)
-			continue;
-		Vector<2> &v2 = TD.v2Error_CovScaled;
-		double dErrorSq = v2 * v2;
-		double dWeight;
+    // The TooN WLSCholesky class handles reweighted least squares.
+    // It just needs errors and jacobians.
+    WLS<6> wls;
+    wls.add_prior(100.0); // Stabilising prior
+    for(unsigned int f=0; f<vTD.size(); f++)
+    {
+        TrackerData &TD = *vTD[f];
+        if(!TD.bFound)
+            continue;
+        Vector<2> &v2 = TD.v2Error_CovScaled;
+        double dErrorSq = v2 * v2;
+        double dWeight;
 
-		if(nEstimator == 0) {
-			dWeight= Tukey::Weight(dErrorSq, dSigmaSquared);
-			if (dWeight != dWeight)
-				dWeight = 0.0;
-		} else if(nEstimator == 1)
-			dWeight= Cauchy::Weight(dErrorSq, dSigmaSquared);
-		else
-			dWeight= Huber::Weight(dErrorSq, dSigmaSquared);
+        if(nEstimator == 0) {
+            dWeight= Tukey::Weight(dErrorSq, dSigmaSquared);
+            if (dWeight != dWeight)
+                dWeight = 0.0;
+        } else if(nEstimator == 1)
+            dWeight= Cauchy::Weight(dErrorSq, dSigmaSquared);
+        else
+            dWeight= Huber::Weight(dErrorSq, dSigmaSquared);
 
-		// Inlier/outlier accounting, only really works for cut-off estimators such as Tukey.
-		if(dWeight == 0.0)
-		{
-			if(bMarkOutliers)
-				TD.Point.nMEstimatorOutlierCount++;
-			continue;
-		}
-		else
-			if(bMarkOutliers)
-				TD.Point.nMEstimatorInlierCount++;
+        // Inlier/outlier accounting, only really works for cut-off estimators such as Tukey.
+        if(dWeight == 0.0)
+        {
+            if(bMarkOutliers)
+                TD.Point.nMEstimatorOutlierCount++;
+            continue;
+        }
+        else
+            if(bMarkOutliers)
+                TD.Point.nMEstimatorInlierCount++;
 
-		Matrix<2,6> &m26Jac = TD.m26Jacobian;
-		wls.add_mJ(v2[0], (Vector<6>)(TD.dSqrtInvNoise * m26Jac[0]), dWeight); // These two lines are currently
-		wls.add_mJ(v2[1], (Vector<6>)(TD.dSqrtInvNoise * m26Jac[1]), dWeight); // the slowest bit of poseits
-	}
+        Matrix<2,6> &m26Jac = TD.m26Jacobian;
+        wls.add_mJ(v2[0], (Vector<6>)(TD.dSqrtInvNoise * m26Jac[0]), dWeight); // These two lines are currently
+        wls.add_mJ(v2[1], (Vector<6>)(TD.dSqrtInvNoise * m26Jac[1]), dWeight); // the slowest bit of poseits
+    }
 
-	wls.compute();
-	return wls.get_mu();
+    wls.compute();
+    return wls.get_mu();
 }
 
 
@@ -1012,17 +1027,17 @@ Vector<6> Tracker::CalcPoseUpdate(vector<TrackerData*> vTD, double dOverrideSigm
 void Tracker::ApplyMotionModel()
 {
 
-	mse3StartPos = mse3CamFromWorld;
+    mse3StartPos = mse3CamFromWorld;
 
 
-	Vector<6> v6Velocity = mv6CameraVelocity;
-	if(mbUseSBIInit)
-	{
-		v6Velocity.slice<3,3>() = mv6SBIRot.slice<3,3>();
-		v6Velocity[0] = 0.0;
-		v6Velocity[1] = 0.0;
-	}
-	mse3CamFromWorld = SE3<>::exp(v6Velocity) * mse3StartPos;
+    Vector<6> v6Velocity = mv6CameraVelocity;
+    if(mbUseSBIInit)
+    {
+        v6Velocity.slice<3,3>() = mv6SBIRot.slice<3,3>();
+        v6Velocity[0] = 0.0;
+        v6Velocity[1] = 0.0;
+    }
+    mse3CamFromWorld = SE3<>::exp(v6Velocity) * mse3StartPos;
 };
 
 
@@ -1033,19 +1048,19 @@ void Tracker::ApplyMotionModel()
  */
 void Tracker::UpdateMotionModel()
 {
-	SE3<> se3NewFromOld = mse3CamFromWorld * mse3StartPos.inverse();
-	Vector<6> v6Motion = SE3<>::ln(se3NewFromOld);
-	Vector<6> v6OldVel = mv6CameraVelocity;
+    SE3<> se3NewFromOld = mse3CamFromWorld * mse3StartPos.inverse();
+    Vector<6> v6Motion = SE3<>::ln(se3NewFromOld);
+    Vector<6> v6OldVel = mv6CameraVelocity;
 
-	mv6CameraVelocity = 0.9 * (0.5 * v6Motion + 0.5 * v6OldVel);
-	mdVelocityMagnitude = sqrt((double)(mv6CameraVelocity * mv6CameraVelocity));
+    mv6CameraVelocity = 0.9 * (0.5 * v6Motion + 0.5 * v6OldVel);
+    mdVelocityMagnitude = sqrt((double)(mv6CameraVelocity * mv6CameraVelocity));
 
-	// Also make an estimate of this which has been scaled by the mean scene depth.
-	// This is used to decide if we should use a coarse tracking stage.
-	// We can tolerate more translational vel when far away from scene!
-	Vector<6> v6 = mv6CameraVelocity;
-	v6.slice<0,3>() *= 1.0 / mCurrentKF.dSceneDepthMean;
-	mdMSDScaledVelocityMagnitude = sqrt((double)(v6*v6));
+    // Also make an estimate of this which has been scaled by the mean scene depth.
+    // This is used to decide if we should use a coarse tracking stage.
+    // We can tolerate more translational vel when far away from scene!
+    Vector<6> v6 = mv6CameraVelocity;
+    v6.slice<0,3>() *= 1.0 / mCurrentKF.dSceneDepthMean;
+    mdMSDScaledVelocityMagnitude = sqrt((double)(v6*v6));
 }
 
 
@@ -1054,9 +1069,9 @@ void Tracker::UpdateMotionModel()
  */
 void Tracker::AddNewKeyFrame()
 {
-	mMapMaker.AddKeyFrame(mCurrentKF);
-	mnLastKeyFrameDropped = mnFrame;
-	mnLastKeyFrameDroppedClock = clock();
+    mMapMaker.AddKeyFrame(mCurrentKF);
+    mnLastKeyFrameDropped = mnFrame;
+    mnLastKeyFrameDroppedClock = clock();
 }
 
 //
@@ -1067,57 +1082,69 @@ void Tracker::AddNewKeyFrame()
  */
 void Tracker::AssessTrackingQuality()
 {
-	int nTotalAttempted = 0;
-	int nTotalFound = 0;
-	int nLargeAttempted = 0;
-	int nLargeFound = 0;
+    int nTotalAttempted = 0;
+    int nTotalFound = 0;
+    int nLargeAttempted = 0;
+    int nLargeFound = 0;
 
-	for(int i=0; i<LEVELS; i++)
-	{
-		nTotalAttempted += manMeasAttempted[i];
-		nTotalFound += manMeasFound[i];
-		if(i>=2) nLargeAttempted += manMeasAttempted[i];
-		if(i>=2) nLargeFound += manMeasFound[i];
-	}
+    for(int i=0; i<LEVELS; i++)
+    {
+        nTotalAttempted += manMeasAttempted[i];
+        nTotalFound += manMeasFound[i];
+        if(i>=2) nLargeAttempted += manMeasAttempted[i];
+        if(i>=2) nLargeFound += manMeasFound[i];
+    }
 
-	if(nTotalFound == 0 || nTotalAttempted == 0)
-		mTrackingQuality = BAD;
-	else
-	{
-		double dTotalFracFound = (double) nTotalFound / nTotalAttempted;
-		double dLargeFracFound;
-		if(nLargeAttempted > 10)
-			dLargeFracFound = (double) nLargeFound / nLargeAttempted;
-		else
-			dLargeFracFound = dTotalFracFound;
+    ROS_DEBUG("Total found: %d", nTotalFound);
 
-		static gvar3<double> gvdQualityGood("Tracker.TrackingQualityGood", TRACKER_QUALITY_GOOD_DEFAULT, SILENT);
-		static gvar3<double> gvdQualityLost("Tracker.TrackingQualityLost", TRACKER_QUALITY_LOST_DEFAULT, SILENT);
+    if(nTotalFound == 0 || nTotalAttempted == 0){
+        mTrackingQuality = BAD;
+        ROS_ERROR("ASSESS QUALITY 1");
+    }
+    else
+    {
+        ROS_ERROR("ASSESS QUALITY 2");
+        double dTotalFracFound = (double) nTotalFound / nTotalAttempted;
+        double dLargeFracFound;
+        if(nLargeAttempted > 10)
+            dLargeFracFound = (double) nLargeFound / nLargeAttempted;
+        else
+            dLargeFracFound = dTotalFracFound;
+
+        static gvar3<double> gvdQualityGood("Tracker.TrackingQualityGood", TRACKER_QUALITY_GOOD_DEFAULT, SILENT);
+        static gvar3<double> gvdQualityLost("Tracker.TrackingQualityLost", TRACKER_QUALITY_LOST_DEFAULT, SILENT);
 
 
-		if(dTotalFracFound > *gvdQualityGood)
-			mTrackingQuality = GOOD;
-		else if(dLargeFracFound < *gvdQualityLost)
-			mTrackingQuality = BAD;
-		else
-			mTrackingQuality = DODGY;
-	}
+        if(dTotalFracFound > *gvdQualityGood){
+            ROS_ERROR("ASSESS QUALITY 3");
+            mTrackingQuality = GOOD;
+        }
+        else if(dLargeFracFound < *gvdQualityLost){
+            ROS_ERROR("ASSESS QUALITY 4");
+            mTrackingQuality = BAD;
+        }
+        else{
+            ROS_ERROR("ASSESS QUALITY 5");
+            mTrackingQuality = DODGY;
+        }
+    }
 
-	if(mTrackingQuality == DODGY)
-	{
-		// Further heuristics to see if it's actually bad, not just dodgy...
-		// If the camera pose estimate has run miles away, it's probably bad.
-		if(mMapMaker.IsDistanceToNearestKeyFrameExcessive(mCurrentKF))
-			mTrackingQuality = BAD;
-	}
+    if(mTrackingQuality == DODGY)
+    {
+        ROS_ERROR("ASSESS QUALITY 6");
+        // Further heuristics to see if it's actually bad, not just dodgy...
+        // If the camera pose estimate has run miles away, it's probably bad.
+        if(mMapMaker.IsDistanceToNearestKeyFrameExcessive(mCurrentKF))
+            mTrackingQuality = BAD;
+    }
 
-	if(mTrackingQuality==BAD)
-		mnLostFrames++;
-	else
-		mnLostFrames = 0;
+    if(mTrackingQuality==BAD)
+        mnLostFrames++;
+    else
+        mnLostFrames = 0;
 
-	numPointsFound = nTotalFound;
-	numPointsAttempted = nTotalAttempted;
+    numPointsFound = nTotalFound;
+    numPointsAttempted = nTotalAttempted;
 }
 
 
@@ -1127,7 +1154,7 @@ void Tracker::AssessTrackingQuality()
  */
 string Tracker::GetMessageForUser()
 {
-	return mMessageForUser.str();
+    return mMessageForUser.str();
 }
 
 
@@ -1136,11 +1163,11 @@ string Tracker::GetMessageForUser()
  */
 void Tracker::CalcSBIRotation()
 {
-	mpSBILastFrame->MakeJacs();
-	pair<SE2<>, double> result_pair;
-	result_pair = mpSBIThisFrame->IteratePosRelToTarget(*mpSBILastFrame, 6);
-	SE3<> se3Adjust = SmallBlurryImage::SE3fromSE2(result_pair.first, mCamera);
-	mv6SBIRot = se3Adjust.ln();
+    mpSBILastFrame->MakeJacs();
+    pair<SE2<>, double> result_pair;
+    result_pair = mpSBIThisFrame->IteratePosRelToTarget(*mpSBILastFrame, 6);
+    SE3<> se3Adjust = SmallBlurryImage::SE3fromSE2(result_pair.first, mCamera);
+    mv6SBIRot = se3Adjust.ln();
 }
 
 
@@ -1150,24 +1177,24 @@ void Tracker::CalcSBIRotation()
  */
 bool Tracker::SwitchMap(Map *map)
 {
-	if( map == NULL ) {
-		return false;
-	}
+    if( map == NULL ) {
+        return false;
+    }
 
-	if( mpMap == map)  {
-		return true;
-	}
+    if( mpMap == map)  {
+        return true;
+    }
 
-	//set variables
-	SE3<> se3Best = mRelocaliser.BestPose();
-	mse3CamFromWorld = mse3StartPos = se3Best;
-	mv6CameraVelocity = Zeros;
-	mbJustRecoveredSoUseCoarse = true;
+    //set variables
+    SE3<> se3Best = mRelocaliser.BestPose();
+    mse3CamFromWorld = mse3StartPos = se3Best;
+    mv6CameraVelocity = Zeros;
+    mbJustRecoveredSoUseCoarse = true;
 
-	//set new map
-	mpMap = map;
+    //set new map
+    mpMap = map;
 
-	return true;
+    return true;
 }
 
 
@@ -1176,15 +1203,15 @@ bool Tracker::SwitchMap(Map *map)
  */
 void Tracker::SetNewMap(Map * map)
 {
-	if( mpMap == map)
-	{
-		cerr << "*** WARNING Tracker::SetNewMap() map is the same. Aborting ***" << endl;
-		return;
-	}
+    if( mpMap == map)
+    {
+        cerr << "*** WARNING Tracker::SetNewMap() map is the same. Aborting ***" << endl;
+        return;
+    }
 
-	ResetCommon();
+    ResetCommon();
 
-	mpMap = map;
+    mpMap = map;
 }
 
 ImageRef TrackerData::irImageSize;  // Static member of TrackerData lives here

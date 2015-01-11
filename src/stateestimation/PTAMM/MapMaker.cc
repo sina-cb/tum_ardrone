@@ -349,8 +349,9 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 {
 	mdWiggleScale = *mgvdWiggleScale; // Cache this for the new map.
 
-	ATANCamera &Camera = kS.Camera;
-	Camera.SetImageSize(kF.aLevels[0].im.size());
+    //ATANCamera &Camera = kF.Camera;
+    ATANCamera &Camera = kF.Camera;
+	//Camera.SetImageSize(kS.aLevels[0].im.size());
 
 	vector<HomographyMatch> vMatches;
 	for(unsigned int i=0; i<vTrailMatches.size(); i++)
@@ -407,6 +408,7 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 	// Construct map from the stereo matches.
 	PatchFinder finder;
 
+    ROS_ERROR("Matches: %d", vMatches.size());
 	for(unsigned int i=0; i<vMatches.size(); i++)
 	{
 		MapPoint *p = new MapPoint();
@@ -594,6 +596,7 @@ void MapMaker::AddSomeMapPoints(int nLevel)
 
 	ThinCandidates(kSrc, nLevel);
 
+    ROS_ERROR("At level %d: %d candidates", nLevel, l.vCandidates.size());
 	for(unsigned int i = 0; i<l.vCandidates.size(); i++)
 		AddPointEpipolar(kSrc, kTarget, nLevel, i);
 };
