@@ -304,7 +304,7 @@ void ControlNode::popNextCommand(const tum_ardrone::filter_stateConstPtr statePt
 		}
 
 		if(!commandUnderstood)
-			ROS_INFO("unknown command, skipping!");
+            ROS_ERROR("unknown command, skipping!");
 	}
 
 }

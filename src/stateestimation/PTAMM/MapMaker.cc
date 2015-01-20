@@ -351,7 +351,7 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 
     //ATANCamera &Camera = kF.Camera;
     ATANCamera &Camera = kF.Camera;
-	//Camera.SetImageSize(kS.aLevels[0].im.size());
+    //Camera.SetImageSize(kF.aLevels[0].im.size());
 
 	vector<HomographyMatch> vMatches;
 	for(unsigned int i=0; i<vTrailMatches.size(); i++)
@@ -394,7 +394,7 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 	// change the scale of the map so the second camera is wiggleScale away from the first
 	se3.get_translation() *= mdWiggleScale / dTransMagn;
 
-	mpMap->initialScaleFactor = dTransIMUMagn / mdWiggleScale;
+    mpMap->initialScaleFactor = dTransIMUMagn / mdWiggleScale;
 
 	KeyFrame *pkFirst = new KeyFrame(kF);
 	KeyFrame *pkSecond = new KeyFrame(kS);
@@ -488,7 +488,7 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 	AddSomeMapPoints(0);
 	AddSomeMapPoints(3);
 	AddSomeMapPoints(1);
-	AddSomeMapPoints(2);
+    AddSomeMapPoints(2);
 
 	mpMap->bBundleConverged_Full = false;
 	mpMap->bBundleConverged_Recent = false;
@@ -508,7 +508,7 @@ bool MapMaker::InitFromStereo(KeyFrame &kF,
 	// Rotate and translate the map so the dominant plane is at z=0:
 	printf("PTAM Init: re-scaleing map with %f\n", 0.1 / pkFirst->dSceneDepthMean);
 	ApplyGlobalScaleToMap(1/pkFirst->dSceneDepthMean);
-	mpMap->initialScaleFactor *= pkFirst->dSceneDepthMean;
+    mpMap->initialScaleFactor *= pkFirst->dSceneDepthMean;
 	ApplyGlobalTransformationToMap(KFZeroDesiredCamFromWorld.inverse());
 
 	mpMap->bGood = true;
@@ -597,9 +597,9 @@ void MapMaker::AddSomeMapPoints(int nLevel)
 	ThinCandidates(kSrc, nLevel);
 
     ROS_ERROR("At level %d: %d candidates", nLevel, l.vCandidates.size());
-	for(unsigned int i = 0; i<l.vCandidates.size(); i++)
-		AddPointEpipolar(kSrc, kTarget, nLevel, i);
-};
+    for(unsigned int i = 0; i<l.vCandidates.size(); i++)
+        AddPointEpipolar(kSrc, kTarget, nLevel, i);
+}
 
 // Rotates/translates the whole map and all keyframes
 void MapMaker::ApplyGlobalTransformationToMap(SE3<> se3NewFromOld)
@@ -686,7 +686,7 @@ void MapMaker::AddKeyFrameFromTopOfQueue()
 	// And maybe we missed some - this now adds to the map itself, too.
 	ReFindInSingleKeyFrame(*pK);
 
-	AddSomeMapPoints(3);       // .. and add more map points by epipolar search.
+    AddSomeMapPoints(3);       // .. and add more map points by epipolar search.
 	AddSomeMapPoints(0);
 	AddSomeMapPoints(1);
 	AddSomeMapPoints(2);

@@ -129,6 +129,7 @@ private:
 	TooN::Vector<3> evalNavQue(unsigned int from, unsigned int to, bool* zCorrupted, bool* allCorrupted, float* out_start_pressure, float* out_end_pressure);
 
 	void InitForTheFirstTime();
+    void NewMap();
 	bool SwitchMap( int nMapNum, bool bForce = false );                                    // Switch to a particular map.
 	bool DeleteMap( int nMapNum );                  // Delete a specified map
 	bool mgvnLockMap;                 // Stop a map being edited - i.e. keyframes added, points updated

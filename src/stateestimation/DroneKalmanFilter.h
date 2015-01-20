@@ -392,7 +392,6 @@ public:
 	// adds a PTAM observation. automatically predicts up to timestamp.
 	void updateScaleXYZ(TooN::Vector<3> ptamDiff, TooN::Vector<3> imuDiff, TooN::Vector<3> OrgPtamPose);
 
-
 	// does not actually change the state of the filter.
 	// makes a compy of it, flushes all queued navdata into it, then predicts up to timestamp.
 	// relatively costly (!)

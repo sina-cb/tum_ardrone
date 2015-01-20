@@ -27,10 +27,10 @@ using namespace GVars3;
  * @param camera The camera model
  */
 Relocaliser::Relocaliser(std::vector<Map*> &maps, ATANCamera &camera)
-: mvpMaps(maps),
-  mpBestMap(NULL),
-  mbNewRun(true),
-  mCamera(camera)
+    : mvpMaps(maps),
+      mpBestMap(NULL),
+      mbNewRun(true),
+      mCamera(camera)
 {
 }
 
@@ -40,7 +40,7 @@ Relocaliser::Relocaliser(std::vector<Map*> &maps, ATANCamera &camera)
  */
 SE3<> Relocaliser::BestPose()
 {
-	return mse3Best;
+    return mse3Best;
 }
 
 
@@ -53,50 +53,50 @@ SE3<> Relocaliser::BestPose()
  */
 bool Relocaliser::AttemptRecovery(Map & currentMap, KeyFrame &kCurrent)
 {
-	mbNewRun = true;
+    mbNewRun = true;
 
-	// Ensure the incoming frame has a SmallBlurryImage attached
-	if(!kCurrent.pSBI)
-		kCurrent.pSBI = new SmallBlurryImage(kCurrent);
-	else
-		kCurrent.pSBI->MakeFromKF(kCurrent);
+    // Ensure the incoming frame has a SmallBlurryImage attached
+    if(!kCurrent.pSBI)
+        kCurrent.pSBI = new SmallBlurryImage(kCurrent);
+    else
+        kCurrent.pSBI->MakeFromKF(kCurrent);
 
-	// Find the best ZMSSD match from all keyframes in all maps
-	std::vector<Map*>::iterator it;
-	for( it = mvpMaps.begin(); it != mvpMaps.end(); it++)
-	{
-		ScoreKFs((*it), kCurrent);
-		mbNewRun = false;
-	}
+    // Find the best ZMSSD match from all keyframes in all maps
+    std::vector<Map*>::iterator it;
+    for( it = mvpMaps.begin(); it != mvpMaps.end(); it++)
+    {
+        ScoreKFs((*it), kCurrent);
+        mbNewRun = false;
+    }
 
-	// And estimate a camera rotation from a 3DOF image alignment
-	pair<SE2<>, double> result_pair = kCurrent.pSBI->IteratePosRelToTarget(*mpBestMap->vpKeyFrames[mnBest]->pSBI, 6);
-	mse2 = result_pair.first;
-	double dScore =result_pair.second;
+    // And estimate a camera rotation from a 3DOF image alignment
+    pair<SE2<>, double> result_pair = kCurrent.pSBI->IteratePosRelToTarget(*mpBestMap->vpKeyFrames[mnBest]->pSBI, 6);
+    mse2 = result_pair.first;
+    double dScore =result_pair.second;
 
-	SE3<> se3KeyFramePos = mpBestMap->vpKeyFrames[mnBest]->se3CfromW;
-	mse3Best = SmallBlurryImage::SE3fromSE2(mse2, mCamera) * se3KeyFramePos;
+    SE3<> se3KeyFramePos = mpBestMap->vpKeyFrames[mnBest]->se3CfromW;
+    mse3Best = SmallBlurryImage::SE3fromSE2(mse2, mCamera) * se3KeyFramePos;
 
-	if(dScore < GV2.GetDouble("Reloc2.MaxScore", 9e6, SILENT))
-	{
-		//are we in the same map?
-		if (mpBestMap == &currentMap) {
-			return true;
-		}
-		else {
-			//switch
-			ostringstream os;
-			os << "SwitchMap " << mpBestMap->MapID();
-			ROS_ERROR("Trying to call GUI PARSE LINE in Relocaliser.cc");
-			exit(-1);
-			GUI.ParseLine(os.str());
-			//remain lost until switch complete
-			return false;
-		}
-	}
-	else {
-		return false;
-	}
+    if(dScore < GV2.GetDouble("Reloc2.MaxScore", 9e6, SILENT))
+    {
+        //are we in the same map?
+        if (mpBestMap == &currentMap) {
+            return true;
+        }
+        else {
+            //switch
+            ostringstream os;
+            os << "SwitchMap " << mpBestMap->MapID();
+            ROS_ERROR("Trying to call GUI PARSE LINE in Relocaliser.cc");
+            GUI.ParseLine(os.str());
+            //remain lost until switch complete
+//            return false;
+            return true;
+        }
+    }
+    else {
+        return false;
+    }
 }
 
 
@@ -109,23 +109,23 @@ bool Relocaliser::AttemptRecovery(Map & currentMap, KeyFrame &kCurrent)
  */
 void Relocaliser::ScoreKFs(Map * pMap, KeyFrame &kCurrent)
 {
-	if(mbNewRun) //only reset on a new attempt at reloc.
-	{
-		mdBestScore = 99999999999999.9;
-		mnBest = -1;
-		mpBestMap = NULL;
-	}
+    if(mbNewRun) //only reset on a new attempt at reloc.
+    {
+        mdBestScore = 99999999999999.9;
+        mnBest = -1;
+        mpBestMap = NULL;
+    }
 
 
-	for( unsigned int i = 0; i < pMap->vpKeyFrames.size(); i++ )
-	{
-		double dSSD = kCurrent.pSBI->ZMSSD( *pMap->vpKeyFrames[i]->pSBI);
-		if(dSSD < mdBestScore)
-		{
-			mdBestScore = dSSD;
-			mnBest = i;
-			mpBestMap = pMap;
-		}
-	}
+    for( unsigned int i = 0; i < pMap->vpKeyFrames.size(); i++ )
+    {
+        double dSSD = kCurrent.pSBI->ZMSSD( *pMap->vpKeyFrames[i]->pSBI);
+        if(dSSD < mdBestScore)
+        {
+            mdBestScore = dSSD;
+            mnBest = i;
+            mpBestMap = pMap;
+        }
+    }
 }
 

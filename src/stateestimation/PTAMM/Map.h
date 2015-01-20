@@ -72,6 +72,10 @@ public:
 	double lastMetricDist;		//TODO: Addition of TUM_ARDRONE to PTAM
 	double lastWiggleDist;		//TODO: Addition of TUM_ARDRONE to PTAM
 
+    double xy_scale, z_scale;
+    void setCurrentScales(TooN::Vector<3> scales);
+    TooN::Vector<3> getCurrentScales();
+
 private:
 	int mnMapNum;                                    // The map number
 

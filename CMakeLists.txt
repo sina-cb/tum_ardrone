@@ -101,6 +101,7 @@ set(STATEESTIMATION_SOURCE_FILES
   src/stateestimation/PTAMM/Utils.cc
   src/stateestimation/PTAMM/MD5.cc
   src/stateestimation/PTAMM/MD5Wrapper.cc
+  src/stateestimation/Logger.cpp
 )
 set(STATEESTIMATION_HEADER_FILES    
   src/HelperFunctions.h   

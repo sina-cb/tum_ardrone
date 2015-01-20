@@ -13,6 +13,9 @@ Map::Map()
 	static int nMapCounter = 0;
 	mnMapNum = nMapCounter++;
 
+    xy_scale = 1;
+    z_scale = 1;
+
 	Reset();
 }
 
@@ -94,6 +97,14 @@ void Map::MoveBadPointsToTrash()
 	};
 }
 
+void Map::setCurrentScales(TooN::Vector<3> scales){
+    xy_scale = scales[0];
+    z_scale = scales[0];
+}
+
+TooN::Vector<3> Map::getCurrentScales(){
+    return TooN::makeVector(xy_scale, xy_scale, z_scale);
+}
 
 /**
  * Delete of the points in the trash

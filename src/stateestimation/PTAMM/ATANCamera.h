@@ -48,7 +48,6 @@
 #include <cmath>
 #include <cvd/vector_image_ref.h>
 #include <gvars3/gvars3.h>
-
 using namespace TooN;
 
 #define NUMTRACKERCAMPARAMETERS 5

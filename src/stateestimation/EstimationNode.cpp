@@ -233,12 +233,15 @@ void EstimationNode::comCb(const std_msgs::StringConstPtr str)
 		mapView->handleCommand(str->data.substr(2,str->data.length()-2));
 	}
 
+    if(str->data.length() > 2 && str->data.substr(0,2) == "n ")
+    {
+        ptamWrapper->handleCommand(str->data.substr(2,str->data.length()-2));
+    }
+
 	if(str->data.length() == 9 && str->data.substr(0,9) == "toggleLog")
 	{
 		this->toogleLogging();
 	}
-
-
 
 
 

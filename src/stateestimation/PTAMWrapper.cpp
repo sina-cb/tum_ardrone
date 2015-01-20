@@ -79,23 +79,25 @@ PTAMWrapper::PTAMWrapper(DroneKalmanFilter* f, EstimationNode* nde)
 
 void PTAMWrapper::ResetInternal()
 {
+    ROS_ERROR("ResetInternals");
+
     //move all maps to first map.
-    if( mpMap != mvpMaps.front() )
-    {
-        if( !SwitchMap( mvpMaps.front()->MapID(), true ) ) {
-            ROS_ERROR("Reset All: Failed to switch to first map");
-        }
-    }
+    //    if( mpMap != mvpMaps.front() )
+    //    {
+    //        if( !SwitchMap( mvpMaps.front()->MapID(), true ) ) {
+    //            ROS_ERROR("Reset All: Failed to switch to first map");
+    //        }
+    //    }
     mpMap->bEditLocked = false;
 
     //reset map.
     mpTracker->Reset();
 
     //lock and delete all remaining maps
-    while( mvpMaps.size() > 1 )
-    {
-        DeleteMap( mvpMaps.back()->MapID() );
-    }
+    //    while( mvpMaps.size() > 1 )
+    //    {
+    //        DeleteMap( mvpMaps.back()->MapID() );
+    //    }
 
     setPTAMPars(minKFTimeDist, minKFWiggleDist, minKFDist);
 
@@ -176,6 +178,8 @@ void PTAMWrapper::InitForTheFirstTime(){
 }
 
 bool PTAMWrapper::SwitchMap( int nMapNum, bool bForce ){
+    ROS_ERROR("Switch Map to %d", nMapNum);
+
     //same map, do nothing. This should not actually occur
     if(mpMap->MapID() == nMapNum) {
         return true;
@@ -187,6 +191,9 @@ bool PTAMWrapper::SwitchMap( int nMapNum, bool bForce ){
         return false;
     }
 
+    TooN::Vector<3> scale = filter->getCurrentScales();
+    ROS_ERROR("Current Scale: %f, %f", scale[0], scale[2]);
+    mpMap->setCurrentScales(scale);
 
     for( size_t ii = 0; ii < mvpMaps.size(); ii++ )
     {
@@ -194,6 +201,7 @@ bool PTAMWrapper::SwitchMap( int nMapNum, bool bForce ){
         if( pcMap->MapID() == nMapNum ) {
             mpMap->mapLockManager.UnRegister( this );
             mpMap = pcMap;
+            filter->setCurrentScales(pcMap->getCurrentScales());
             mpMap->mapLockManager.Register( this );
         }
     }
@@ -226,11 +234,7 @@ bool PTAMWrapper::SwitchMap( int nMapNum, bool bForce ){
     }
 
     //update the map viewer object
-    //mpMapViewer->SwitchMap(mpMap, bForce); //TODO: Check this
-
-    //update the tracker object
-    //   mpARDriver->Reset();
-    //mpARDriver->SetCurrentMap( *mpMap ); //TODO: Check this
+    //node->mapView->SwitchMap(mpMap, bForce);
 
     if( !mpTracker->SwitchMap( mpMap ) ) {
         return false;
@@ -239,7 +243,43 @@ bool PTAMWrapper::SwitchMap( int nMapNum, bool bForce ){
     return true;
 }
 
+/**
+ * Create a new map and switch all
+ * threads and objects to it.
+ */
+void PTAMWrapper::NewMap()
+{
+    ROS_ERROR("New Map!!!");
+
+    mgvnLockMap = false;
+    ROS_ERROR("Before adding: %d", mvpMaps.size());
+    mpMap->mapLockManager.UnRegister(this);
+    mpMap->setCurrentScales(filter->getCurrentScales());
+
+    mpMap = new Map();
+    filter->setCurrentScales(mpMap->getCurrentScales());
+    mpMap->mapLockManager.Register(this);
+    mvpMaps.push_back(mpMap);
+    ROS_ERROR("After adding: %d", mvpMaps.size());
+
+    //update the map maker thread
+    mpMapMaker->RequestReInit(mpMap);
+    while(!mpMapMaker->ReInitDone()) {
+        usleep(10);
+    }
+
+    //update the map viewer object
+    // node->mapView->SwitchMap(mpMap, bForce);
+
+    //update the tracker object
+    mpTracker->SetNewMap(mpMap);
+
+    ROS_DEBUG("New map created (%d)", mpMap->MapID());
+}
+
 bool PTAMWrapper::DeleteMap( int nMapNum ){
+    ROS_ERROR("Delete Map!!!");
+
     if( mvpMaps.size() <= 1 )
     {
         ROS_INFO("Cannot delete the only map. Use Reset instead.");
@@ -496,7 +536,6 @@ void PTAMWrapper::HandleFrame()
 
     if(filter->getNumGoodPTAMObservations() < 10 && mpMap->IsGood())
     {
-        ROS_ERROR("1");
         isGood = true;
         isVeryGood = false;
     }
@@ -507,12 +546,10 @@ void PTAMWrapper::HandleFrame()
             mpTracker->lastStepResult == mpTracker->NOT_TRACKING ||
             mpTracker->lastStepResult == mpTracker->INITIALIZING){
 
-        ROS_ERROR("2");
         isGood = isVeryGood = false;
     }
     else
     {
-        ROS_ERROR("3");
         // some chewy heuristic when to add and when not to.
         bool dodgy = mpTracker->lastStepResult == mpTracker->T_DODGY ||
                 mpTracker->lastStepResult == mpTracker->T_RECOVERED_DODGY;
@@ -540,13 +577,11 @@ void PTAMWrapper::HandleFrame()
 
     if(isGood)
     {
-        ROS_ERROR("4");
         if(isGoodCount < 0) isGoodCount = 0;
         isGoodCount++;
     }
     else
     {
-        ROS_ERROR("5");
         if(isGoodCount > 0) isGoodCount = 0;
         isGoodCount--;
 
@@ -570,11 +605,9 @@ void PTAMWrapper::HandleFrame()
     pthread_mutex_lock( &filter->filter_CS );
     if(filter->usePTAM && isGoodCount >= 3)
     {
-        ROS_ERROR("6");
         filter->addPTAMObservation(PTAMResult,mimFrameTime_workingCopy-filter->delayVideo);
     }
     else{
-        ROS_ERROR("7");
         filter->addFakePTAMObservation(mimFrameTime_workingCopy-filter->delayVideo);
     }
 
@@ -590,13 +623,11 @@ void PTAMWrapper::HandleFrame()
     // if interval is overdue: reset & dont add
     if(includedTime > 3000)
     {
-        ROS_ERROR("8");
         framesIncludedForScaleXYZ = -1;
     }
 
     if(isGoodCount >= 3)
     {
-        ROS_ERROR("9");
         // filter stuff
         lastScaleEKFtimestamp = mimFrameTime_workingCopy;
 
@@ -643,8 +674,6 @@ void PTAMWrapper::HandleFrame()
 
     if(lockNextFrame && isGood)
     {
-        ROS_ERROR("10");
-
         filter->scalingFixpoint = PTAMResult.slice<0,3>();
         lockNextFrame = false;
         //filter->useScalingFixpoint = true;
@@ -656,10 +685,8 @@ void PTAMWrapper::HandleFrame()
 
     //forceKF = true;
     // ----------------------------- Take KF? -----------------------------------
-    //if(!mapLocked && isVeryGood && (forceKF || mpMap->vpKeyFrames.size() < maxKF || maxKF <= 1))
+    if(!mapLocked && isVeryGood && (forceKF || mpMap->vpKeyFrames.size() < maxKF || maxKF <= 1))
     {
-        ROS_ERROR("11");
-
         ROS_DEBUG("PTAMWrapper:: Take KF!!!");
         mpTracker->TakeKF(forceKF);
         forceKF = false;
@@ -1152,6 +1179,58 @@ void PTAMWrapper::on_key_down(int key)
 // reached by typing "df p COMMAND" into console
 bool PTAMWrapper::handleCommand(std::string s)
 {
+
+    if(s.length() == 3 && s.substr(0,3) == "new")
+    {
+        ROS_ERROR("Add new MAP!");
+        NewMap();
+        ROS_ERROR("Maps count: %d", mvpMaps.size());
+    }
+
+    if(s.length() == 4 && s.substr(0,4) == "save")
+    {
+        ROS_ERROR("Save!");
+
+    }
+
+    if(s.length() == 4 && s.substr(0,4) == "load")
+    {
+        ROS_ERROR("Load!");
+
+    }
+
+    if(s.length() == 4 && s.substr(0,4) == "prev")
+    {
+        ROS_ERROR("Previous Map!");
+
+        ROS_ERROR("Orig Map ID: %d", mpMap->MapID());
+        int map_id = mpMap->MapID();
+        map_id--;
+
+        if (map_id >= 0){
+            SwitchMap(map_id);
+        }else{
+            SwitchMap(mvpMaps.size() - 1);
+        }
+        ROS_ERROR("Current Map ID: %d", mpMap->MapID());
+    }
+
+    if(s.length() == 4 && s.substr(0,4) == "next")
+    {
+        ROS_ERROR("Next Map!");
+
+        ROS_ERROR("Orig Map ID: %d", mpMap->MapID());
+        int map_id = mpMap->MapID();
+        map_id++;
+
+        if (map_id < mvpMaps.size()){
+            SwitchMap(map_id);
+        }else{
+            SwitchMap(0);
+        }
+        ROS_ERROR("Current Map ID: %d", mpMap->MapID());
+    }
+
     if(s.length() == 5 && s.substr(0,5) == "space")
     {
         mpTracker->pressSpacebar();

@@ -283,6 +283,16 @@ void MapView::Render()
 
 }
 
+//void MapView::SwitchMap(Map * map, bool bForce = false)
+//{
+//  if( map != NULL && map != mpMap ) {
+//    mpMap = map;
+
+//    if(!mbBrowseMode || bForce) {
+//      mpViewingMap = mpMap;
+//    }
+//  }
+//}
 
 void MapView::drawTrail()
 {

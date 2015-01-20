@@ -119,6 +119,7 @@ private:
 
 public:
 
+//    void SwitchMap(Map * map, bool bForce = false);
 	MapView(DroneKalmanFilter* f, PTAMWrapper* p, EstimationNode* nde);
 	~MapView(void);
 

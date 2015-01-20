@@ -39,15 +39,6 @@ public:
 			SE3<> KFOneDesiredCamFromWorld		//TODO: Addition of TUM_ARDRONE to PTAM
 	);
 
-
-	//TODO: Changed this part
-	/*double initialScaleFactor;	//TODO: Addition of TUM_ARDRONE to PTAM
-	double currentScaleFactor;	//TODO: Addition of TUM_ARDRONE to PTAM set exgternally for metric scale.
-	double minKFWiggleDist;		//TODO: Addition of TUM_ARDRONE to PTAM
-	double minKFDist;			//TODO: Addition of TUM_ARDRONE to PTAM
-	double lastMetricDist;		//TODO: Addition of TUM_ARDRONE to PTAM
-	double lastWiggleDist;		//TODO: Addition of TUM_ARDRONE to PTAM*/
-
 	void AddKeyFrame(KeyFrame &k);   // Add a key-frame to the map. Called by the tracker.
 	void RequestReset();   // Request that the we reset. Called by the tracker.
 	bool ResetDone();      // Returns true if the has been done.
@@ -146,7 +137,6 @@ protected:
 	bool mbReInitDone;                // map reinitialization done
 	bool mbSwitchRequested;           // switch to another map requested
 	bool mbSwitchDone;                // switch to another map done
-
 };
 
 

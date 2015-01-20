@@ -111,7 +111,6 @@ void Tracker::Reset()
 // or not (it should not draw, for example, when AR stuff is being shown.)
 void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 {
-    ROS_ERROR("TRACK FRAME - START");
     mbDraw = bDraw;
     mMessageForUser.str("");   // Wipe the user message clean
 
@@ -127,13 +126,11 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
     mbUseSBIInit = *gvnUseSBI;
     if (!mpSBIThisFrame)
     {
-        ROS_ERROR("TRACK FRAME - 1");
         mpSBIThisFrame = new SmallBlurryImage(mCurrentKF, *gvdSBIBlur);
         mpSBILastFrame = new SmallBlurryImage(mCurrentKF, *gvdSBIBlur);
     }
     else
     {
-        ROS_ERROR("TRACK FRAME - 2");
         delete mpSBILastFrame;
         mpSBILastFrame = mpSBIThisFrame;
         mpSBIThisFrame = new SmallBlurryImage(mCurrentKF, *gvdSBIBlur);
@@ -144,11 +141,9 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 
     if (mbDraw)
     {
-        ROS_ERROR("TRACK FRAME - 3");
         glDrawPixels(mCurrentKF.aLevels[0].im);
         if(GV2.GetInt("Tracker.DrawFASTCorners",TRACKER_DRAW_FAST_CORNERS_DEFAULT, SILENT))
         {
-            ROS_ERROR("TRACK FRAME - 4");
             glColor3f(1,0,1);  glPointSize(1); glBegin(GL_POINTS);
             for(unsigned int i=0; i<mCurrentKF.aLevels[0].vCorners.size(); i++)
                 glVertex(mCurrentKF.aLevels[0].vCorners[i]);
@@ -159,12 +154,9 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
     // Decide what to do - if there is a map, try to track the map ...
     if(mpMap->IsGood())
     {
-        ROS_ERROR("TRACK FRAME - 5");
         if(mnLostFrames < NUM_LOST_FRAMES)  // .. but only if we're not lost!
         {
-            ROS_ERROR("TRACK FRAME - 6");
             if(mbUseSBIInit){
-                ROS_ERROR("TRACK FRAME - 7");
                 CalcSBIRotation();
             }
 
@@ -174,8 +166,6 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 
             AssessTrackingQuality();  //  Check if we're lost or if tracking is poor.
 
-            //mTrackingQuality = GOOD;
-
             if(mTrackingQuality == GOOD)
                 lastStepResult = T_GOOD;
             if(mTrackingQuality == DODGY)
@@ -183,6 +173,7 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
             if(mTrackingQuality == BAD)
                 lastStepResult = T_LOST;
 
+            int zeroLevels = 0;
             { // Provide some feedback for the user:
                 mMessageForUser << "Tracking Map, quality ";
                 if(mTrackingQuality == GOOD)  mMessageForUser << "good.";
@@ -191,9 +182,16 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
                 mMessageForUser << " Found:";
                 for(int i=0; i<LEVELS; i++) {
                     mMessageForUser << " " << manMeasFound[i] << "/" << manMeasAttempted[i];
+                    if (manMeasFound[i] < 1)
+                        zeroLevels++;
                 }
                 mMessageForUser << " Map " << mpMap->MapID() << ": "
                                 << mpMap->vpPoints.size() << "P, " << mpMap->vpKeyFrames.size() << "KF";
+            }
+
+            if (zeroLevels == 3){
+                ROS_ERROR("3 Level are empty!");
+//                mpMap->Reset();
             }
 
             /*/ Heuristics to check if a key-frame should be added to the map:
@@ -210,19 +208,17 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
         }
         else  // what if there is a map, but tracking has been lost?
         {
-            ROS_ERROR("TRACK FRAME - 8");
             tryToRecover();
         }
     }
     else{ // If there is no map, try to make one.
-        ROS_ERROR("TRACK FRAME - 9");
         TrackForInitialMap();
+        //mpMap->bEditLocked = !mpMap->bEditLocked;
     }
 
     // GUI interface
     while(!mvQueuedCommands.empty())
     {
-        ROS_ERROR("TRACK FRAME - 10");
         ROS_DEBUG("Pending commands!");
         GUICommandHandler(mvQueuedCommands.begin()->sCommand, mvQueuedCommands.begin()->sParams);
         mvQueuedCommands.erase(mvQueuedCommands.begin());
@@ -549,7 +545,8 @@ int Tracker::TrailTracking_Advance()
  */
 void Tracker::TrackMap()
 {
-    mCamera = mPreviousFrameKF.Camera;
+
+    //mCamera = mPreviousFrameKF.Camera;
 
     // Some accounting which will be used for tracking quality assessment:
     for(int i=0; i<LEVELS; i++)
@@ -1026,9 +1023,7 @@ Vector<6> Tracker::CalcPoseUpdate(vector<TrackerData*> vTD, double dOverrideSigm
  */
 void Tracker::ApplyMotionModel()
 {
-
     mse3StartPos = mse3CamFromWorld;
-
 
     Vector<6> v6Velocity = mv6CameraVelocity;
     if(mbUseSBIInit)
@@ -1038,8 +1033,7 @@ void Tracker::ApplyMotionModel()
         v6Velocity[1] = 0.0;
     }
     mse3CamFromWorld = SE3<>::exp(v6Velocity) * mse3StartPos;
-};
-
+}
 
 
 /**
@@ -1091,19 +1085,19 @@ void Tracker::AssessTrackingQuality()
     {
         nTotalAttempted += manMeasAttempted[i];
         nTotalFound += manMeasFound[i];
+        ROS_DEBUG("Total points found at level %d: %d", i, manMeasFound[i]);
         if(i>=2) nLargeAttempted += manMeasAttempted[i];
         if(i>=2) nLargeFound += manMeasFound[i];
     }
 
-    ROS_DEBUG("Total found: %d", nTotalFound);
+    ROS_DEBUG("Total attempts: %d", nTotalAttempted);
+    ROS_DEBUG("Total points found: %d", nTotalFound);
 
     if(nTotalFound == 0 || nTotalAttempted == 0){
         mTrackingQuality = BAD;
-        ROS_ERROR("ASSESS QUALITY 1");
     }
     else
     {
-        ROS_ERROR("ASSESS QUALITY 2");
         double dTotalFracFound = (double) nTotalFound / nTotalAttempted;
         double dLargeFracFound;
         if(nLargeAttempted > 10)
@@ -1116,22 +1110,18 @@ void Tracker::AssessTrackingQuality()
 
 
         if(dTotalFracFound > *gvdQualityGood){
-            ROS_ERROR("ASSESS QUALITY 3");
             mTrackingQuality = GOOD;
         }
         else if(dLargeFracFound < *gvdQualityLost){
-            ROS_ERROR("ASSESS QUALITY 4");
             mTrackingQuality = BAD;
         }
         else{
-            ROS_ERROR("ASSESS QUALITY 5");
             mTrackingQuality = DODGY;
         }
     }
 
     if(mTrackingQuality == DODGY)
     {
-        ROS_ERROR("ASSESS QUALITY 6");
         // Further heuristics to see if it's actually bad, not just dodgy...
         // If the camera pose estimate has run miles away, it's probably bad.
         if(mMapMaker.IsDistanceToNearestKeyFrameExcessive(mCurrentKF))
