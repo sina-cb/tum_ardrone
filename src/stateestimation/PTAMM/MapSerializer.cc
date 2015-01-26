@@ -58,7 +58,7 @@ MapSerializer::~MapSerializer()
  */
 bool MapSerializer::_LockMap()
 {
-	return mpMap->mapLockManager.LockMap( this );
+    return mpMap->mapLockManager.LockMap( this );
 }
 
 
@@ -194,11 +194,15 @@ MapSerializer::MapStatus MapSerializer::_LoadMap( std::string sDirName )
 	TiXmlDocument mXMLDoc;                                 //XML file
 	string sMapFileName = sDirName + "/map.xml";
 
+    cerr << "Before read xml file" << endl;
+
 	//load the XML file
 	if( !mXMLDoc.LoadFile( sMapFileName ) )  {
 		cerr << "Failed to load " << sMapFileName << ". Aborting." << endl;
 		return MAP_FAILED;
 	}
+
+    cerr << "After read xml file" << endl;
 
 	TiXmlHandle hDoc(&mXMLDoc);
 	TiXmlElement* pElem;
@@ -215,7 +219,12 @@ MapSerializer::MapStatus MapSerializer::_LoadMap( std::string sDirName )
 
 	string sID( MAP_XML_ID );
 	string sVersion( MAP_VERSION );
+
+    cerr << pElem->FirstAttribute()->Name() << endl;
+
 	string sFileVersion = pElem->Attribute("version");
+
+    cerr << "Found version value " << sFileVersion << endl;
 
 	if( ( sID.compare( pElem->Value() ) != 0 ) &&
 			( sVersion.compare( sFileVersion ) != 0 ) )
@@ -225,17 +234,41 @@ MapSerializer::MapStatus MapSerializer::_LoadMap( std::string sDirName )
 		return MAP_FAILED;
 	}
 
+    cerr << "Before saving hRoot" << endl;
+
 	// save this for later
 	hRoot = TiXmlHandle(pElem);
 
+    cerr << "Before Getting map lock" << endl;
+
 	////////////  Get map lock  ////////////
-	if( !_LockMap() ) {
-		cerr << "Failed to get map lock" << endl;
-		return MAP_FAILED;
-	}
+    //TODO: I have no idea why this lock map won't work at all!
+//	if( !_LockMap() ) {
+//		cerr << "Failed to get map lock" << endl;
+//		return MAP_FAILED;
+//	}
+    cerr << "After Getting map lock" << endl;
 
 	mpMap->Reset();     // Wipe them out. All of them!
 
+    cerr << "Aftre Reset Map" << endl;
+
+
+    ////////////  Load Map Scale  ////////////
+    TiXmlHandle scaleNode = hRoot.FirstChild( "Scale" );
+    double x_scale = 1;
+    double y_scale = 1;
+    double z_scale = 1;
+
+    scaleNode.ToElement()->QueryDoubleAttribute("x_scale", &x_scale);
+    scaleNode.ToElement()->QueryDoubleAttribute("y_scale", &y_scale);
+    scaleNode.ToElement()->QueryDoubleAttribute("z_scale", &z_scale);
+
+    mpMap->setCurrentScales(TooN::makeVector(x_scale, y_scale, z_scale));
+    cerr << "X Scale: " << x_scale << " Y Scale: " << y_scale << " Z Scale: " << z_scale << endl;
+    ////////////  Map Scale Loaded////////////
+
+    cerr << "Before Loading Key frames" << endl;
 	// load the keyframes
 	bool bOK = _LoadKeyFrames( hRoot, sDirName );
 	if( !bOK )  {
@@ -243,7 +276,9 @@ MapSerializer::MapStatus MapSerializer::_LoadMap( std::string sDirName )
 		_UnlockMap();
 		return MAP_FAILED;
 	}
+    cerr << "After Loading Key frames" << endl;
 
+    cerr << "Before Loading Map Points" << endl;
 	// load map points
 	bOK = _LoadMapPoints( hRoot );
 	if( !bOK ) {
@@ -251,6 +286,7 @@ MapSerializer::MapStatus MapSerializer::_LoadMap( std::string sDirName )
 		_UnlockMap();
 		return MAP_FAILED;
 	}
+    cerr << "After Loading Map Points" << endl;
 
 
 	////////////  load the uids for the keyframes and map points in the failure queue  ////////////
@@ -262,16 +298,6 @@ MapSerializer::MapStatus MapSerializer::_LoadMap( std::string sDirName )
 		mpMap->Reset();
 		_UnlockMap();
 		return MAP_FAILED;
-	}
-
-
-	////////////  load the game data  ////////////
-	string sGame = hRoot.FirstChild( "Game" ).Element()->Attribute("type");
-	cout << "Game = " << sGame << endl;
-	if( sGame != "None" )
-	{
-		string sGameDataFile = hRoot.FirstChild( "Game" ).Element()->Attribute("path");
-		/*mpMap->pGame = LoadAGame(sGame, sDirName + "/" + sGameDataFile);*/
 	}
 
 	//all loaded so set map as good.
@@ -350,12 +376,16 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 			return MAP_FAILED;
 		}
 
+        cerr << "Before recursive load" << endl;
+
 		// load the map file and hence the rest of the map
 		ms = _LoadMap( sDirName );
 		if( MAP_OK != ms )  {
 			_UnRegisterWithMap();
 			return ms;
 		}
+
+        cerr << "After recursive load" << endl;
 
 		_UnRegisterWithMap();
 		_CleanUp();
@@ -826,11 +856,14 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 	 */
 	MapSerializer::MapStatus MapSerializer::_SaveMap( std::string sPath )
 	{
+        cerr << "In recursive SaveMap - Before Lock!" << endl;
 		////////////  Get map lock  ////////////
-		if( !_LockMap() ) {
-			cerr << "Failed to get map lock" << endl;
-			return MAP_FAILED;
-		}
+        //TODO: Check this lock too
+//        if( !_LockMap() ) {
+//            cerr << "Failed to get map lock" << endl;
+//            return MAP_FAILED;
+//        }
+        cerr << "In recursive SaveMap - After Lock!" << endl;
 
 		TiXmlDocument xmlDoc;     //XML file
 
@@ -843,8 +876,20 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 		xmlDoc.LinkEndChild( rootNode );
 		rootNode->SetAttribute("version", MAP_VERSION);
 
+        TiXmlElement * scaleNode = new TiXmlElement("Scale");
+        rootNode->LinkEndChild(scaleNode);
+
+        cerr << "Current scale X: " << mpMap->getCurrentScales()[0] << endl;
+        cerr << "Current scale Y: " << mpMap->getCurrentScales()[1] << endl;
+        cerr << "Current scale Z: " << mpMap->getCurrentScales()[2] << endl;
+
+        scaleNode->SetDoubleAttribute("x_scale", mpMap->getCurrentScales()[0]);
+        scaleNode->SetDoubleAttribute("y_scale", mpMap->getCurrentScales()[1]);
+        scaleNode->SetDoubleAttribute("z_scale", mpMap->getCurrentScales()[2]);
+
 		////////////  save the keyframes and map points  ////////////
-		bool bOK = false;
+        cerr << "In recursive SaveMap - Before Keyframe Save!" << endl;
+        bool bOK = false;
 		_CreateSaveLUTs();                      // create lookup tables for the mappoints and keyframes
 
 		bOK = _SaveKeyFrames( sPath, rootNode );   // recursively save each keyframe
@@ -857,8 +902,10 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 			_UnlockMap();
 			return MAP_FAILED;
 		}
+        cerr << "In recursive SaveMap - After Keyframe Save!" << endl;
 
 		////////////  save the uids for the keyframes and map points in the failure queue  ////////////
+        cerr << "In recursive SaveMap - Before Map points Save!" << endl;
 		{
 			TiXmlElement * failElem = new TiXmlElement( "FailureQueue" );
 			rootNode->LinkEndChild( failElem );
@@ -879,7 +926,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 				}
 			}
 		}
-
+        cerr << "In recursive SaveMap - After Map points Save!" << endl;
 
 
 		////////////  save the game data  ////////////
@@ -900,10 +947,14 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 			game->SetAttribute("type", "None");
 		}*/
 
+        cerr << "In recursive SaveMap - Before release!" << endl;
 		////////////  relase map lock  ////////////
 		_UnlockMap();
+        cerr << "In recursive SaveMap - After release!" << endl;
 
+        cerr << "In recursive SaveMap - SaveFile XML!" << endl;
 		xmlDoc.SaveFile(sMapFileName);
+        cerr << "In recursive SaveMap - DONE!" << endl;
 		return MAP_OK;
 	}
 
@@ -1531,6 +1582,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 				}
 			}
 
+            cerr << "Calling recursive savemap" << endl;
 			//recusively save the map and all its elements
 			ms = _SaveMap( sDirName );
 			if( MAP_OK != ms )

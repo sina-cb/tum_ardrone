@@ -33,6 +33,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 
 int getdirtxt (std::string dir, std::vector<std::string> &files)
@@ -174,7 +175,13 @@ void tum_ardrone_gui::on_SaveBtn_clicked()
 
 void tum_ardrone_gui::on_loadBtn_clicked()
 {
-    rosThread->publishCommand("n load");
+    int map_id = ui.mapIDtxt->text().toInt();
+
+    std::ostringstream os;
+    os << "map" << std::setfill('0') << std::setw(6) << map_id;
+
+    std::string cmd = "n load " + os.str();
+    rosThread->publishCommand(cmd);
 }
 
 void tum_ardrone_gui::on_prevBtn_clicked()

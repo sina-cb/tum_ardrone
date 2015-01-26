@@ -44,13 +44,13 @@ public:
 
 	virtual void run();
 
+    //The actual map saving and loading functions
+    MapStatus LoadMap( Map * pMap, std::string sDirName );
+    MapStatus SaveMap( Map * pMap, std::string sDirName );
+    void SaveMaps( std::vector<Map*> & vpMaps,  std::string sBaseName );
+
 private:
 	Map * _ParseCommandAndParameters();
-
-	//The actual map saving and loading functions
-	MapStatus LoadMap( Map * pMap, std::string sDirName );
-	MapStatus SaveMap( Map * pMap, std::string sDirName );
-	void SaveMaps( std::vector<Map*> & vpMaps,  std::string sBaseName );
 
 	//saving
 	MapStatus _SaveMap( std::string sPath );

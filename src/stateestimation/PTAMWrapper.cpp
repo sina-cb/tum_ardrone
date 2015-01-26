@@ -1189,14 +1189,26 @@ bool PTAMWrapper::handleCommand(std::string s)
 
     if(s.length() == 4 && s.substr(0,4) == "save")
     {
-        ROS_ERROR("Save!");
+        ROS_ERROR("Saving!");
 
+        std::string map_location = "";
+        //map_location = map_location + "map_" + boost::lexical_cast<std::string>(mpMap->MapID());
+        mpMap->setCurrentScales(filter->getCurrentScales());
+        mpMapSerializer->SaveMap(mpMap, map_location);
+
+        ROS_ERROR("Saved!");
     }
 
-    if(s.length() == 4 && s.substr(0,4) == "load")
+    if(s.substr(0,4) == "load")
     {
-        ROS_ERROR("Load!");
+        ROS_ERROR("Loading!");
 
+        std::string map_location = s.substr(5, s.length());
+//        map_location = map_location + "map_" + boost::lexical_cast<std::string>(0);
+        mpMapSerializer->LoadMap(mpMap, map_location);
+        filter->setCurrentScales(mpMap->getCurrentScales());
+
+        ROS_ERROR("Loaded!");
     }
 
     if(s.length() == 4 && s.substr(0,4) == "prev")

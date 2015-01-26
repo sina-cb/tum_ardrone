@@ -534,7 +534,7 @@
   <widget class="QPushButton" name="nextBtn">
    <property name="geometry">
     <rect>
-     <x>200</x>
+     <x>260</x>
      <y>470</y>
      <width>41</width>
      <height>27</height>
@@ -547,7 +547,7 @@
   <widget class="QPushButton" name="prevBtn">
    <property name="geometry">
     <rect>
-     <x>160</x>
+     <x>220</x>
      <y>470</y>
      <width>41</width>
      <height>27</height>
@@ -555,6 +555,19 @@
    </property>
    <property name="text">
     <string>Prev</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="mapIDtxt">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>470</y>
+     <width>61</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>MapID</string>
    </property>
   </widget>
   <zorder>nextBtn</zorder>
@@ -568,6 +581,7 @@
   <zorder>SaveBtn</zorder>
   <zorder>loadBtn</zorder>
   <zorder>prevBtn</zorder>
+  <zorder>mapIDtxt</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
