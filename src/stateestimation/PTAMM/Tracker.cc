@@ -194,16 +194,15 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
 //                mpMap->Reset();
             }
 
-            /*/ Heuristics to check if a key-frame should be added to the map:
-              if(mTrackingQuality == GOOD && (forceKF || (
+            // Heuristics to check if a key-frame should be added to the map:
+              if(mTrackingQuality == GOOD &&
                  mMapMaker.NeedNewKeyFrame(mCurrentKF) &&
                  mnFrame - mnLastKeyFrameDropped > FRAMES_BETWEEN_KEYFRAMES  &&
-                 mMapMaker.QueueSize() < 3)))
+                 mpMap->QueueSize() < 3)
                 {
                   mMessageForUser << " Adding key-frame.";
                   AddNewKeyFrame();
-                  forceKF = false;
-                };*/
+                };
 
         }
         else  // what if there is a map, but tracking has been lost?
@@ -717,8 +716,6 @@ void Tracker::TrackMap()
     // ourselves to 1000, and choose these randomly.
     static gvar3<int> gvnMaxPatchesPerFrame("Tracker.MaxPatchesPerFrame", TRACKER_MAX_PATCHES_PER_FRAME_DEFAULT, SILENT);
     int nFinePatchesToUse = *gvnMaxPatchesPerFrame - static_cast<int>(vIterationSet.size());
-    if(nFinePatchesToUse < 0)
-        nFinePatchesToUse = 0;
     if((int) vNextToSearch.size() > nFinePatchesToUse)
     {
         random_shuffle(vNextToSearch.begin(), vNextToSearch.end());
@@ -950,7 +947,7 @@ Vector<6> Tracker::CalcPoseUpdate(vector<TrackerData*> vTD, double dOverrideSigm
         TrackerData &TD = *vTD[f];
         if(!TD.bFound)
             continue;
-        vdErrorSquared.push_back((double)(TD.v2Error_CovScaled * TD.v2Error_CovScaled));
+      TD.v2Error_CovScaled = TD.dSqrtInvNoise* (TD.v2Found - TD.v2Image);
         vdErrorSquared.push_back(TD.v2Error_CovScaled * TD.v2Error_CovScaled);
     };
 
