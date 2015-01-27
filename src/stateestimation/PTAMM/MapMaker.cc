@@ -564,8 +564,8 @@ void MapMaker::ThinCandidates(KeyFrame &k, int nLevel)
 		irBusyLevelPos.push_back(ir_rounded(it->second.v2RootPos / LevelScale(nLevel)));
 	}
 
-  // Only keep those candidates further than 10 pixels away from busy positions.
-  unsigned int nMinMagSquared = 10*10;
+  // Only keep those candidates further than 5 pixels away from busy positions.
+  unsigned int nMinMagSquared = 5*5;
 	for(unsigned int i=0; i<vCSrc.size(); i++)
 	{
 		ImageRef irC = vCSrc[i].irLevelPos;
@@ -729,8 +729,8 @@ bool MapMaker::AddPointEpipolar(KeyFrame &kSrc,
 	// to increase reliability
 	double dMean = kSrc.dSceneDepthMean;
 	double dSigma = kSrc.dSceneDepthSigma;
-  double dStartDepth = max(mdWiggleScale, dMean - dSigma);
-  double dEndDepth = min(40 * mdWiggleScale, dMean + dSigma);
+  double dStartDepth = max(mdWiggleScale * 0.75, dMean - dSigma * 1.5);
+  double dEndDepth = min(40 * mdWiggleScale * 1.5, dMean + dSigma * 1.5);
 
 	Vector<3> v3CamCenter_TC = kTarget.se3CfromW * kSrc.se3CfromW.inverse().get_translation(); // The camera end
 	Vector<3> v3RayStart_TC = v3CamCenter_TC + dStartDepth * v3LineDirn_TC;                               // the far-away end
