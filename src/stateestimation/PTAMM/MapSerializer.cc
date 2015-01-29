@@ -271,7 +271,7 @@ MapSerializer::MapStatus MapSerializer::_LoadMap( std::string sDirName )
     cerr << "Before Loading Key frames" << endl;
 	// load the keyframes
 	bool bOK = _LoadKeyFrames( hRoot, sDirName );
-	if( !bOK )  {
+    if( !bOK )  {
 		mpMap->Reset();
 		_UnlockMap();
 		return MAP_FAILED;
@@ -854,7 +854,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 	 * @param sPath the root folder path for the map
 	 * @return status
 	 */
-	MapSerializer::MapStatus MapSerializer::_SaveMap( std::string sPath )
+    MapSerializer::MapStatus MapSerializer::_SaveMap( std::string sPath )
 	{
         cerr << "In recursive SaveMap - Before Lock!" << endl;
 		////////////  Get map lock  ////////////

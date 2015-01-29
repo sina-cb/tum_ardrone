@@ -1,5 +1,5 @@
 #pragma once
- /**
+/**
  *  This file is part of tum_ardrone.
  *
  *  Copyright 2012 Jakob Engel <jajuengel@gmail.com> (Technical University of Munich)
@@ -33,6 +33,7 @@
 #include "MouseKeyHandler.h"
 #include "boost/thread.hpp"
 #include <gvars3/instances.h>
+using namespace GVars3;
 
 class Map;
 class MapMaker;
@@ -55,147 +56,148 @@ typedef TooN::SE3<> tse3;
 class PTAMWrapper : private CVD::Thread, private MouseKeyHandler
 {
 private:
-	// base window
-	GLWindow2* myGLWindow;
-	CVD::ImageRef desiredWindowSize;		// size the window scould get changed to if [changeSizeNextRender]
-	CVD::ImageRef defaultWindowSize;		// size the window gets opened with
-	bool changeSizeNextRender;
+    // base window
+    GLWindow2* myGLWindow;
+    CVD::ImageRef desiredWindowSize;		// size the window scould get changed to if [changeSizeNextRender]
+    CVD::ImageRef defaultWindowSize;		// size the window gets opened with
+    bool changeSizeNextRender;
 
 
-	// the associated thread's run function.
-	// calls HandleFrame() every time a new frame is available.
-	void run();
+    // the associated thread's run function.
+    // calls HandleFrame() every time a new frame is available.
+    void run();
 
-	void HandleFrame();
+    void HandleFrame();
 
-	// references to filter.
-	DroneKalmanFilter* filter;
-	EstimationNode* node;
+    // references to filter.
+    DroneKalmanFilter* filter;
+    EstimationNode* node;
 
-	// -------------------- PTAM related stuff --------------------------------
-	char charBuf[1000];
-	std::string msg;
+    // -------------------- PTAM related stuff --------------------------------
+    char charBuf[1000];
+    std::string msg;
 
-	CVD::Image<CVD::byte> mimFrameBW;
-	CVD::Image<CVD::byte> mimFrameBW_workingCopy;
-	int mimFrameTime;
-	int mimFrameTime_workingCopy;
-	unsigned int mimFrameSEQ;
-	unsigned int mimFrameSEQ_workingCopy;
-	ros::Time mimFrameTimeRos;
-	ros::Time mimFrameTimeRos_workingCopy;
-	int frameWidth, frameHeight;
+    CVD::Image<CVD::byte> mimFrameBW;
+    CVD::Image<CVD::byte> mimFrameBW_workingCopy;
+    int mimFrameTime;
+    int mimFrameTime_workingCopy;
+    unsigned int mimFrameSEQ;
+    unsigned int mimFrameSEQ_workingCopy;
+    ros::Time mimFrameTimeRos;
+    ros::Time mimFrameTimeRos_workingCopy;
+    int frameWidth, frameHeight;
 
 
-	// Map is in my global Coordinate system. keyframes give the front-cam-position, i.e.
-	// CFromW is "GlobalToFront". this is achieved by aligning the global coordinate systems in the very beginning.
-	std::vector<Map*> mvpMaps;                      // The set of maps
-	Map *mpMap;
-	MapMaker *mpMapMaker;
-	Tracker *mpTracker;
-	ATANCamera *mpCamera;
-	Predictor* predConvert;			// used ONLY to convert from rpy to se3 and back, i.e. never kept in some state.
-	Predictor* predIMUOnlyForScale;	// used for scale calculation. needs to be updated with every new navinfo...
+    // Map is in my global Coordinate system. keyframes give the front-cam-position, i.e.
+    // CFromW is "GlobalToFront". this is achieved by aligning the global coordinate systems in the very beginning.
+    std::vector<Map*> mvpMaps;                      // The set of maps
+    Map *mpMap;
+    MapMaker *mpMapMaker;
+    Tracker *mpTracker;
+    ATANCamera *mpCamera;
+    Predictor* predConvert;			// used ONLY to convert from rpy to se3 and back, i.e. never kept in some state.
+    Predictor* predIMUOnlyForScale;	// used for scale calculation. needs to be updated with every new navinfo...
     MapSerializer *mpMapSerializer;                 // The map serializer for saving and loading maps
-
-	double minKFTimeDist;
-	double minKFWiggleDist;
-	double minKFDist;
-
-
-	Predictor* imuOnlyPred;
-	int lastScaleEKFtimestamp;
-
-	bool resetPTAMRequested;
-	enum {UI_NONE = 0, UI_DEBUG = 1, UI_PRES = 2} drawUI;
+    double minKFTimeDist;
+    double minKFWiggleDist;
+    double minKFDist;
 
 
-	bool forceKF;
+    Predictor* imuOnlyPred;
+    int lastScaleEKFtimestamp;
 
-	bool flushMapKeypoints;
+    bool resetPTAMRequested;
+    enum {UI_NONE = 0, UI_DEBUG = 1, UI_PRES = 2} drawUI;
 
-	int lastAnimSentClock;
-	enum {ANIM_NONE, ANIM_TOOKKF, ANIM_GOOD, ANIM_INIT, ANIM_LOST, ANIM_FALSEPOS} lastAnimSent;
 
-	//int lastGoodPTAM;	/// approx. timestamp of last good ptam observation... inaccurate!
-	int lastGoodYawClock;
-	int isGoodCount;	// number of succ. tracked frames in a row.
+    bool forceKF;
 
-	TooN::Vector<3> PTAMPositionForScale;
-	int ptamPositionForScaleTakenTimestamp;
-	int framesIncludedForScaleXYZ;
-	std::deque<ardrone_autonomy::Navdata> navInfoQueue;
-	bool navQueueOverflown;
-	TooN::Vector<3> evalNavQue(unsigned int from, unsigned int to, bool* zCorrupted, bool* allCorrupted, float* out_start_pressure, float* out_end_pressure);
+    bool flushMapKeypoints;
 
-	void InitForTheFirstTime();
+    int lastAnimSentClock;
+    enum {ANIM_NONE, ANIM_TOOKKF, ANIM_GOOD, ANIM_INIT, ANIM_LOST, ANIM_FALSEPOS} lastAnimSent;
+
+    //int lastGoodPTAM;	/// approx. timestamp of last good ptam observation... inaccurate!
+    int lastGoodYawClock;
+    int isGoodCount;	// number of succ. tracked frames in a row.
+
+    TooN::Vector<3> PTAMPositionForScale;
+    int ptamPositionForScaleTakenTimestamp;
+    int framesIncludedForScaleXYZ;
+    std::deque<ardrone_autonomy::Navdata> navInfoQueue;
+    bool navQueueOverflown;
+    TooN::Vector<3> evalNavQue(unsigned int from, unsigned int to, bool* zCorrupted, bool* allCorrupted, float* out_start_pressure, float* out_end_pressure);
+
+    void InitForTheFirstTime();
     void NewMap();
-	bool SwitchMap( int nMapNum, bool bForce = false );                                    // Switch to a particular map.
-	bool DeleteMap( int nMapNum );                  // Delete a specified map
-	bool mgvnLockMap;                 // Stop a map being edited - i.e. keyframes added, points updated
-	// keep Running
-	bool keepRunning;
+    bool SwitchMap( int nMapNum, bool bForce = false );                                    // Switch to a particular map.
+    bool DeleteMap( int nMapNum );                  // Delete a specified map
+    bool mgvnLockMap;                 // Stop a map being edited - i.e. keyframes added, points updated
+    // keep Running
+    bool keepRunning;
 
-	bool lockNextFrame;
+    bool lockNextFrame;
 
-	boost::condition_variable  new_frame_signal;
-	boost::mutex new_frame_signal_mutex;
+    boost::condition_variable  new_frame_signal;
+    boost::mutex new_frame_signal_mutex;
 
 
-	// resets PTAMM tracking
-	void ResetInternal();
+    // resets PTAMM tracking
+    void ResetInternal();
 
-	void renderGrid(TooN::SE3<> camFromWorld);
+    void renderGrid(TooN::SE3<> camFromWorld);
 
-	int videoFramePing;
+    int videoFramePing;
 
-	std::ofstream* logfileScalePairs;
-	static pthread_mutex_t logScalePairs_CS; //pthread_mutex_lock( &cs_mutex );
+    std::ofstream* logfileScalePairs;
+    static pthread_mutex_t logScalePairs_CS; //pthread_mutex_lock( &cs_mutex );
 
 public:
 
-	PTAMWrapper(DroneKalmanFilter* dkf, EstimationNode* nde);
-	~PTAMWrapper(void);
+    PTAMWrapper(DroneKalmanFilter* dkf, EstimationNode* nde);
+    ~PTAMWrapper(void);
 
-	// ROS exclusive: called by external thread if a new image/navdata is received.
-	// takes care of sync etc.
-	void newImage(sensor_msgs::ImageConstPtr img);
-	void newNavdata(ardrone_autonomy::Navdata* nav);
-	bool newImageAvailable;
-	void setPTAMPars(double minKFTimeDist, double minKFWiggleDist, double minKFDist);
+    // ROS exclusive: called by external thread if a new image/navdata is received.
+    // takes care of sync etc.
+    void newImage(sensor_msgs::ImageConstPtr img);
+    void newNavdata(ardrone_autonomy::Navdata* nav);
+    bool newImageAvailable;
+    void setPTAMPars(double minKFTimeDist, double minKFWiggleDist, double minKFDist);
 
-	bool handleCommand(std::string s);
-	bool mapLocked;
-	int maxKF;
-	static pthread_mutex_t navInfoQueueCS; //pthread_mutex_lock( &cs_mutex );
-	static pthread_mutex_t shallowMapCS; //pthread_mutex_lock( &cs_mutex );
+    bool handleCommand(std::string s);
+    static void GUICommandCallBack(void *ptr, std::string sCommand, std::string sParams);
+    bool GetSingleParam(int &nAnswer, std::string sCommand, std::string sParams);
+    bool mapLocked;
+    int maxKF;
+    static pthread_mutex_t navInfoQueueCS; //pthread_mutex_lock( &cs_mutex );
+    static pthread_mutex_t shallowMapCS; //pthread_mutex_lock( &cs_mutex );
 
-	// Event handling routines.
-	// get called by the myGLWindow on respective event.
-	virtual void on_key_down(int key);
-	//virtual void on_mouse_move(CVD::ImageRef where, int state);
-	virtual void on_mouse_down(CVD::ImageRef where, int state, int button);
-	//virtual void on_event(int event);
+    // Event handling routines.
+    // get called by the myGLWindow on respective event.
+    virtual void on_key_down(int key);
+    //virtual void on_mouse_move(CVD::ImageRef where, int state);
+    virtual void on_mouse_down(CVD::ImageRef where, int state, int button);
+    //virtual void on_event(int event);
 
-	// resets PTAM tracking
-	inline void Reset() {resetPTAMRequested = true;};
+    // resets PTAM tracking
+    inline void Reset() {resetPTAMRequested = true;};
 
 
-	// start and stop system and respective thread.
-	void startSystem();
-	void stopSystem();
+    // start and stop system and respective thread.
+    void startSystem();
+    void stopSystem();
 
-	enum {PTAM_IDLE = 0, PTAM_INITIALIZING = 1, PTAM_LOST = 2, PTAM_GOOD = 3, PTAM_BEST = 4, PTAM_TOOKKF = 5, PTAM_FALSEPOSITIVE = 6} PTAMStatus;
-	TooN::SE3<> lastPTAMResultRaw;
-	std::string lastPTAMMessage;
+    enum {PTAM_IDLE = 0, PTAM_INITIALIZING = 1, PTAM_LOST = 2, PTAM_GOOD = 3, PTAM_BEST = 4, PTAM_TOOKKF = 5, PTAM_FALSEPOSITIVE = 6} PTAMStatus;
+    TooN::SE3<> lastPTAMResultRaw;
+    std::string lastPTAMMessage;
 
-	// for map rendering: shallow clone
-	std::vector<tvec3> mapPointsTransformed;
-	std::vector<tse3> keyFramesTransformed;
+    // for map rendering: shallow clone
+    std::vector<tvec3> mapPointsTransformed;
+    std::vector<tse3> keyFramesTransformed;
 
-	ardrone_autonomy::Navdata lastNavinfoReceived;
+    ardrone_autonomy::Navdata lastNavinfoReceived;
 
-	int PTAMInitializedClock;
+    int PTAMInitializedClock;
 
 };
 

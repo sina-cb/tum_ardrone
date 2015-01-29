@@ -26,6 +26,7 @@
 #include "cvd/thread.h"
 #include "TooN/se3.h"
 #include "MouseKeyHandler.h"
+#include "PTAMM/Map.h"
 
 class DroneKalmanFilter;
 class PTAMWrapper;
@@ -123,7 +124,7 @@ public:
 	MapView(DroneKalmanFilter* f, PTAMWrapper* p, EstimationNode* nde);
 	~MapView(void);
 
-	bool handleCommand(std::string s);
+    bool handleCommand(std::string s);
 
 	inline void Reset() {resetRequested = true;};
 

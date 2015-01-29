@@ -452,6 +452,7 @@ bool Bundle::Do_LM_Step(bool *pbAbortSignal)
 			{
 				cerr << "NANNERY! " << endl;
 				cerr << mvPoints[i].m3VStarInv << endl;
+                cerr << "NAN?? : " << mvPoints[i].v3EpsilonB - v3Sum << endl;
 			};
 		}
 

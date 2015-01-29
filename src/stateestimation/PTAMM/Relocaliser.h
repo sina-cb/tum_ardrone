@@ -16,6 +16,7 @@
 #include <TooN/se2.h>
 #include "ATANCamera.h"
 #include "SmallBlurryImage.h"
+#include "../PTAMWrapper.h"
 
 #include "Map.h"
 
@@ -23,7 +24,7 @@
 class Relocaliser
 {
 public:
-	Relocaliser(std::vector<Map*> &maps, ATANCamera &camera);
+    Relocaliser(std::vector<Map*> &maps, ATANCamera &camera);
 	bool AttemptRecovery(Map & currentMap, KeyFrame &k);
 	SE3<> BestPose();
 	Map * mpBestMap;                                // The map where the camera has been found
@@ -35,6 +36,7 @@ protected:
 	bool mbNewRun;                                 // Is this a new search of all maps?
 
 	ATANCamera mCamera;
+    PTAMWrapper *ptamwrapper;
 	int mnBest;
 	double mdBestScore;
 	SE2<> mse2;

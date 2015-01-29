@@ -36,6 +36,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <gvars3/GStringUtil.h>
+
 
 pthread_mutex_t PTAMWrapper::navInfoQueueCS = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t PTAMWrapper::shallowMapCS = PTHREAD_MUTEX_INITIALIZER;
@@ -75,6 +77,8 @@ PTAMWrapper::PTAMWrapper(DroneKalmanFilter* f, EstimationNode* nde)
     logfileScalePairs = 0;
 
     mgvnLockMap = false;
+
+    GUI.RegisterCommand("SwitchMap", GUICommandCallBack, this);
 }
 
 void PTAMWrapper::ResetInternal()
@@ -187,7 +191,6 @@ bool PTAMWrapper::SwitchMap( int nMapNum, bool bForce ){
 
     if( (nMapNum < 0) )
     {
-        ROS_ERROR("Invalid map number");
         return false;
     }
 
@@ -234,7 +237,7 @@ bool PTAMWrapper::SwitchMap( int nMapNum, bool bForce ){
     }
 
     //update the map viewer object
-    //node->mapView->SwitchMap(mpMap, bForce);
+    //mapView->SwitchMap(mpMap, bForce);
 
     if( !mpTracker->SwitchMap( mpMap ) ) {
         return false;
@@ -269,7 +272,7 @@ void PTAMWrapper::NewMap()
     }
 
     //update the map viewer object
-    // node->mapView->SwitchMap(mpMap, bForce);
+    //mapView->SwitchMap(mpMap, true);
 
     //update the tracker object
     mpTracker->SetNewMap(mpMap);
@@ -1176,10 +1179,65 @@ void PTAMWrapper::on_key_down(int key)
 }
 
 
+/**
+ * Parse commands sent via the GVars command system.
+ * @param ptr Object callback
+ * @param sCommand command string
+ * @param sParams parameters
+ */
+void PTAMWrapper::GUICommandCallBack(void *ptr, std::string sCommand, std::string sParams)
+{
+    if( sCommand == "SwitchMap"){
+        int nMapNum = -1;
+
+        if( static_cast<PTAMWrapper*>(ptr)->GetSingleParam(nMapNum, sCommand, sParams) ) {
+            ROS_ERROR("Swith Map To --> %d ", nMapNum);
+            static_cast<PTAMWrapper*>(ptr)->SwitchMap( nMapNum );
+        }
+    }
+}
+
+/**
+ * Parse and allocate a single integer variable from a string parameter
+ * @param nAnswer the result
+ * @param sCommand the command (used to display usage info)
+ * @param sParams  the parameters to parse
+ * @return success or failure.
+ */
+bool PTAMWrapper::GetSingleParam(int &nAnswer, std::string sCommand, std::string sParams)
+{
+    std::vector<std::string> vs = ChopAndUnquoteString(sParams);
+
+    if(vs.size() == 1)
+    {
+        //is param a number?
+        bool bIsNum = true;
+        for( size_t i = 0; i < vs[0].size(); i++ ) {
+            bIsNum = isdigit( vs[0][i] ) && bIsNum;
+        }
+
+        if( !bIsNum )
+        {
+            return false;
+        }
+
+        int *pN = ParseAndAllocate<int>(vs[0]);
+        if( pN )
+        {
+            nAnswer = *pN;
+            delete pN;
+            return true;
+        }
+    }
+
+    std::cout << sCommand << " usage: " << sCommand << " value" << std::endl;
+
+    return false;
+}
+
 // reached by typing "df p COMMAND" into console
 bool PTAMWrapper::handleCommand(std::string s)
 {
-
     if(s.length() == 3 && s.substr(0,3) == "new")
     {
         ROS_ERROR("Add new MAP!");
@@ -1204,7 +1262,7 @@ bool PTAMWrapper::handleCommand(std::string s)
         ROS_ERROR("Loading!");
 
         std::string map_location = s.substr(5, s.length());
-//        map_location = map_location + "map_" + boost::lexical_cast<std::string>(0);
+        //        map_location = map_location + "map_" + boost::lexical_cast<std::string>(0);
         mpMapSerializer->LoadMap(mpMap, map_location);
         filter->setCurrentScales(mpMap->getCurrentScales());
 
