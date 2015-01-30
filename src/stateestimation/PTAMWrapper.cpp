@@ -97,6 +97,10 @@ void PTAMWrapper::ResetInternal()
     //reset map.
     mpTracker->Reset();
 
+    pthread_mutex_lock( &filter->filter_CS );
+    filter->reset();
+    pthread_mutex_unlock( &filter->filter_CS );
+
     //lock and delete all remaining maps
     //    while( mvpMaps.size() > 1 )
     //    {
@@ -686,11 +690,10 @@ void PTAMWrapper::HandleFrame()
         node->publishCommand(std::string("u l ")+charBuf);
     }
 
-    //forceKF = true;
     // ----------------------------- Take KF? -----------------------------------
     if(!mapLocked && isVeryGood && (forceKF || mpMap->vpKeyFrames.size() < maxKF || maxKF <= 1))
     {
-        ROS_DEBUG("PTAMWrapper:: Take KF!!!");
+        ROS_ERROR("PTAMWrapper:: Take KF!!!");
         mpTracker->TakeKF(forceKF);
         forceKF = false;
     }
@@ -1260,7 +1263,6 @@ bool PTAMWrapper::handleCommand(std::string s)
     if(s.substr(0,4) == "load")
     {
         ROS_ERROR("Loading!");
-
         std::string map_location = s.substr(5, s.length());
         //        map_location = map_location + "map_" + boost::lexical_cast<std::string>(0);
         mpMapSerializer->LoadMap(mpMap, map_location);

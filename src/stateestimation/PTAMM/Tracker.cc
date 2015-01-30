@@ -173,7 +173,6 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
             if(mTrackingQuality == BAD)
                 lastStepResult = T_LOST;
 
-            int zeroLevels = 0;
             { // Provide some feedback for the user:
                 mMessageForUser << "Tracking Map, quality ";
                 if(mTrackingQuality == GOOD)  mMessageForUser << "good.";
@@ -182,16 +181,9 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
                 mMessageForUser << " Found:";
                 for(int i=0; i<LEVELS; i++) {
                     mMessageForUser << " " << manMeasFound[i] << "/" << manMeasAttempted[i];
-                    if (manMeasFound[i] < 1)
-                        zeroLevels++;
                 }
                 mMessageForUser << " Map " << mpMap->MapID() << ": "
                                 << mpMap->vpPoints.size() << "P, " << mpMap->vpKeyFrames.size() << "KF";
-            }
-
-            if (zeroLevels == 3){
-                ROS_ERROR("3 Level are empty!");
-//                mpMap->Reset();
             }
 
             // Heuristics to check if a key-frame should be added to the map:
