@@ -784,6 +784,7 @@ TooN::Vector<3> DroneKalmanFilter::transformPTAMObservation(double x,double y,do
 {
 	return transformPTAMObservation(x,y,z,yaw.state[0]);
 }
+
 TooN::Vector<3> DroneKalmanFilter::transformPTAMObservation(double x,double y,double z, double yaw)
 {
 	double yawRad = yaw * 3.14159268 / 180;

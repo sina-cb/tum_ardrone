@@ -17,6 +17,9 @@
 #include <vector>
 #include <map>
 #include <cvd/thread.h>
+#include "TooN/se3.h"
+#include "../Predictor.h"
+#include "../DroneKalmanFilter.h"
 
 #include "tinyxml.h"
 
@@ -49,7 +52,13 @@ public:
     MapStatus SaveMap( Map * pMap, std::string sDirName );
     void SaveMaps( std::vector<Map*> & vpMaps,  std::string sBaseName );
 
+    void setFilter(DroneKalmanFilter* filter) {this->filter = filter;}
+    void setPredictor(Predictor* predConvert) {this->predConvert = predConvert;}
+
 private:
+    DroneKalmanFilter* filter;
+    Predictor* predConvert;
+
 	Map * _ParseCommandAndParameters();
 
 	//saving

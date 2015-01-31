@@ -97,9 +97,11 @@ void PTAMWrapper::ResetInternal()
     //reset map.
     mpTracker->Reset();
 
-    pthread_mutex_lock( &filter->filter_CS );
-    filter->reset();
-    pthread_mutex_unlock( &filter->filter_CS );
+//    pthread_mutex_lock( &filter->filter_CS );
+//    filter->reset();
+//    pthread_mutex_unlock( &filter->filter_CS );
+
+  //  filter->clearPTAM();
 
     //lock and delete all remaining maps
     //    while( mvpMaps.size() > 1 )
@@ -693,7 +695,7 @@ void PTAMWrapper::HandleFrame()
     // ----------------------------- Take KF? -----------------------------------
     if(!mapLocked && isVeryGood && (forceKF || mpMap->vpKeyFrames.size() < maxKF || maxKF <= 1))
     {
-        ROS_ERROR("PTAMWrapper:: Take KF!!!");
+        //ROS_ERROR("PTAMWrapper:: Take KF!!!");
         mpTracker->TakeKF(forceKF);
         forceKF = false;
     }
@@ -1254,6 +1256,15 @@ bool PTAMWrapper::handleCommand(std::string s)
 
         std::string map_location = "";
         //map_location = map_location + "map_" + boost::lexical_cast<std::string>(mpMap->MapID());
+
+        ROS_ERROR("Save globalToDrone Trans: %f | %f | %f", predConvert->globaltoDrone.get_translation()[0], predConvert->globaltoDrone.get_translation()[1]
+                , predConvert->globaltoDrone.get_translation()[2]);
+
+        ROS_ERROR("Save globalToDrone Rotation: %f", predConvert->globaltoDrone.get_rotation());
+
+        mpMapSerializer->setFilter(filter);
+        mpMapSerializer->setPredictor(predConvert);
+
         mpMap->setCurrentScales(filter->getCurrentScales());
         mpMapSerializer->SaveMap(mpMap, map_location);
 
@@ -1265,8 +1276,18 @@ bool PTAMWrapper::handleCommand(std::string s)
         ROS_ERROR("Loading!");
         std::string map_location = s.substr(5, s.length());
         //        map_location = map_location + "map_" + boost::lexical_cast<std::string>(0);
+
+
+        ROS_ERROR("Load globalToDrone Trans: %f | %f | %f", predConvert->globaltoDrone.get_translation()[0]
+                , predConvert->globaltoDrone.get_translation()[1]
+                , predConvert->globaltoDrone.get_translation()[2]);
+
+        ROS_ERROR("Load globalToDrone Rotation: %f", predConvert->globaltoDrone.get_rotation());
+
+        mpMapSerializer->setFilter(filter);
+        mpMapSerializer->setPredictor(predConvert);
+
         mpMapSerializer->LoadMap(mpMap, map_location);
-        filter->setCurrentScales(mpMap->getCurrentScales());
 
         ROS_ERROR("Loaded!");
     }

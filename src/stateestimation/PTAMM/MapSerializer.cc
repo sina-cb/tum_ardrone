@@ -34,8 +34,6 @@
 using namespace std;
 using namespace GVars3;
 
-
-
 /**
  * Constructor
  */
@@ -265,6 +263,8 @@ MapSerializer::MapStatus MapSerializer::_LoadMap( std::string sDirName )
     scaleNode.ToElement()->QueryDoubleAttribute("z_scale", &z_scale);
 
     mpMap->setCurrentScales(TooN::makeVector(x_scale, y_scale, z_scale));
+    filter->setCurrentScales(mpMap->getCurrentScales());
+
     cerr << "X Scale: " << x_scale << " Y Scale: " << y_scale << " Z Scale: " << z_scale << endl;
     ////////////  Map Scale Loaded////////////
 
@@ -483,7 +483,18 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 		sscanf(tmp.c_str(), "%lf %lf %lf %lf %lf %lf", &v6KFPose[0], &v6KFPose[1], &v6KFPose[2],
 				&v6KFPose[3], &v6KFPose[4], &v6KFPose[5]);
 
-		kf->se3CfromW = SE3<>::exp( v6KFPose );
+        //HERE!!! LOAD
+        TooN::SE3<> se3New = SE3<>::exp(v6KFPose);
+        predConvert->setPosSE3_globalToDrone(se3New);
+
+        TooN::Vector<6> CamPos = TooN::makeVector(predConvert->x, predConvert->y, predConvert->z, predConvert->roll, predConvert->pitch, predConvert->yaw);
+        CamPos = filter->backTransformPTAMObservation(CamPos);
+
+        predConvert->setPosRPY(CamPos[0], CamPos[1], CamPos[2], CamPos[3], CamPos[4], CamPos[5]);
+
+        kf->se3CfromW = predConvert->droneToFrontNT * predConvert->droneToGlobal;
+
+ //       kf->se3CfromW = SE3<>::exp(v6KFPose);
 
 		int nTmp = 0;
 		kfe->QueryIntAttribute("fixed", &nTmp);
@@ -863,7 +874,6 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 //            cerr << "Failed to get map lock" << endl;
 //            return MAP_FAILED;
 //        }
-        cerr << "In recursive SaveMap - After Lock!" << endl;
 
 		TiXmlDocument xmlDoc;     //XML file
 
@@ -879,16 +889,11 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
         TiXmlElement * scaleNode = new TiXmlElement("Scale");
         rootNode->LinkEndChild(scaleNode);
 
-        cerr << "Current scale X: " << mpMap->getCurrentScales()[0] << endl;
-        cerr << "Current scale Y: " << mpMap->getCurrentScales()[1] << endl;
-        cerr << "Current scale Z: " << mpMap->getCurrentScales()[2] << endl;
-
         scaleNode->SetDoubleAttribute("x_scale", mpMap->getCurrentScales()[0]);
         scaleNode->SetDoubleAttribute("y_scale", mpMap->getCurrentScales()[1]);
         scaleNode->SetDoubleAttribute("z_scale", mpMap->getCurrentScales()[2]);
 
 		////////////  save the keyframes and map points  ////////////
-        cerr << "In recursive SaveMap - Before Keyframe Save!" << endl;
         bool bOK = false;
 		_CreateSaveLUTs();                      // create lookup tables for the mappoints and keyframes
 
@@ -902,10 +907,8 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 			_UnlockMap();
 			return MAP_FAILED;
 		}
-        cerr << "In recursive SaveMap - After Keyframe Save!" << endl;
 
 		////////////  save the uids for the keyframes and map points in the failure queue  ////////////
-        cerr << "In recursive SaveMap - Before Map points Save!" << endl;
 		{
 			TiXmlElement * failElem = new TiXmlElement( "FailureQueue" );
 			rootNode->LinkEndChild( failElem );
@@ -926,36 +929,16 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 				}
 			}
 		}
-        cerr << "In recursive SaveMap - After Map points Save!" << endl;
-
 
 		////////////  save the game data  ////////////
 		TiXmlElement * game = new TiXmlElement( "Game" );
 		rootNode->LinkEndChild( game );
 		game->SetAttribute("type", "None");
 
-		/*if( mpMap->pGame )
-		{
-			game->SetAttribute("type", mpMap->pGame->Name() );
-			string sFile = mpMap->pGame->Save( sPath );
-
-			if( !sFile.empty() ) {
-				game->SetAttribute("path", sFile );
-			}
-		}
-		else  {
-			game->SetAttribute("type", "None");
-		}*/
-
-        cerr << "In recursive SaveMap - Before release!" << endl;
 		////////////  relase map lock  ////////////
 		_UnlockMap();
-        cerr << "In recursive SaveMap - After release!" << endl;
-
-        cerr << "In recursive SaveMap - SaveFile XML!" << endl;
 		xmlDoc.SaveFile(sMapFileName);
-        cerr << "In recursive SaveMap - DONE!" << endl;
-		return MAP_OK;
+        return MAP_OK;
 	}
 
 	/**
@@ -1084,7 +1067,16 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 
 			kfe->SetAttribute( "id", uid );
 
-			os << kf->se3CfromW.ln();
+            //HERE!!! SAVE
+
+            predConvert->setPosSE3_globalToDrone(predConvert->frontToDroneNT * kf->se3CfromW);
+            TooN::Vector<6> CamPos = TooN::makeVector(predConvert->x, predConvert->y, predConvert->z, predConvert->roll, predConvert->pitch, predConvert->yaw);
+            CamPos = filter->transformPTAMObservation(CamPos);
+            predConvert->setPosRPY(CamPos[0], CamPos[1], CamPos[2], CamPos[3], CamPos[4], CamPos[5]);
+
+            SE3<> se3New = predConvert->droneToGlobal;
+            os << se3New.ln();
+
 			s = os.str();
 			PruneWhiteSpace( s );
 			kfe->SetAttribute("pose", s );
@@ -1219,7 +1211,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 		if( stat( sKeyFramePath.c_str(),&st ) != 0  )
 		{
 #ifdef WIN32
-			int err = _mkdir( sKeyFramePath.c_str());
+            int err = _mkdir( sKeyFramePath.c_str());
 #else
 			int err = mkdir( sKeyFramePath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
 #endif
@@ -1496,19 +1488,15 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 	 * @param sDirName the filename ("mapname" or "path/to/mapname" or "")
 	 * @return status
 	 */
-	MapSerializer::MapStatus MapSerializer::SaveMap( Map * pMap, std::string sDirName )
-	{
+    MapSerializer::MapStatus MapSerializer::SaveMap( Map * pMap, std::string sDirName )
+    {
 		MapStatus ms = MAP_OK;
 		_CleanUp();
 
-		cerr << " Saving Map " << sDirName << endl;
-
 		if( pMap == NULL ) {
-			cerr << "SaveMap: got a NULL map pointer. abort" << endl;
 			return MAP_FAILED;
 		}
 		if( !pMap->IsGood() ) {
-			cerr << "SaveMap: Bad Map. abort" << endl;
 			return MAP_FAILED;
 		}
 
@@ -1534,27 +1522,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 		if( stat( sDirName.c_str(), &st ) == 0 )
 		{
 			//is it a dir
-#ifdef WIN32
-			// Get the current working directory:
-			char* cwdBuffer = _getcwd( NULL, 0 );
-			if( cwdBuffer == NULL )
-			{
-				perror( "Error getting the current working directory: Error with _getcwd in MapSerializer." );
-				_UnRegisterWithMap();
-				return MAP_EXISTS;
-			}
-
-			//attempt to change working directory
-			int chdirReturn = _chdir(sDirName.c_str()); //returns 0 if change was successful, -1 if it dosen't exist
-			if( chdirReturn == 0 )
-			{
-				//restore previous working directory
-				_chdir( cwdBuffer );
-			}
-			else {
-#else
 				if( !S_ISDIR(st.st_mode) ) {
-#endif
 					cerr << " A file called " << sDirName << " already exists. Aborting" << endl;
 					_UnRegisterWithMap();
 					return MAP_EXISTS;
@@ -1569,11 +1537,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 			}
 			else
 			{
-#ifdef WIN32
-				int err = _mkdir( sDirName.c_str());
-#else
 				int err = mkdir( sDirName.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
-#endif
 				if( err != 0 )
 				{
 					cerr << "Failed to make dir " << sDirName << ". Aborting." << endl;
@@ -1582,7 +1546,6 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 				}
 			}
 
-            cerr << "Calling recursive savemap" << endl;
 			//recusively save the map and all its elements
 			ms = _SaveMap( sDirName );
 			if( MAP_OK != ms )
@@ -1590,11 +1553,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 				if( MAP_FAILED )
 				{
 					///@TODO this will fail if the dir has contents.
-#ifdef WIN32
-					_rmdir( sDirName.c_str() );
-#else
 					rmdir( sDirName.c_str() );
-#endif
 				}
 				_UnRegisterWithMap();
 				return ms;
@@ -1650,7 +1609,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 						sDirName = os.str();
 					}
 
-					ms = SaveMap( (*i), sDirName );
+                    ms = SaveMap( (*i), sDirName );
 				}
 			}
 
@@ -1674,13 +1633,13 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 						LoadMap( pMap, msDirName );
 					}
 					else if( msCommand == "SaveMap" )  {
-						SaveMap( pMap, msDirName );
+                        SaveMap( pMap, msDirName );
 					}
 				}
 				//otherwise it is save all maps or an error
 				else {
 
-					if( msCommand == "SaveMaps" )  {
+                    if( msCommand == "SaveMaps" )  {
 						SaveMaps( mvpMaps, msDirName );
 					}
 				}

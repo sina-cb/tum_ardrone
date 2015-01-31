@@ -99,7 +99,7 @@ void Map::MoveBadPointsToTrash()
 
 void Map::setCurrentScales(TooN::Vector<3> scales){
     xy_scale = scales[0];
-    z_scale = scales[0];
+    z_scale = scales[2];
 }
 
 TooN::Vector<3> Map::getCurrentScales(){

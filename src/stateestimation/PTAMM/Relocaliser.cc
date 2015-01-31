@@ -89,11 +89,11 @@ bool Relocaliser::AttemptRecovery(Map & currentMap, KeyFrame &kCurrent)
             ROS_ERROR("Trying to Switch to the Best Map Possible: MapID --> %d", mpBestMap->MapID());
             ostringstream os;
             os << "SwitchMap " << mpBestMap->MapID();
-            //GUI.ParseLine(os.str());
+            GUI.ParseLine(os.str());
 
             //remain lost until switch complete
-            //return false;
-            return true;
+            return false;
+            //return true;
         }
     }
     else {
