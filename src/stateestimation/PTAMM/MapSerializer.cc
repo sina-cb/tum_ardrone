@@ -484,17 +484,17 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 				&v6KFPose[3], &v6KFPose[4], &v6KFPose[5]);
 
         //HERE!!! LOAD
-        TooN::SE3<> se3New = SE3<>::exp(v6KFPose);
-        predConvert->setPosSE3_globalToDrone(se3New);
+//        TooN::SE3<> se3New = SE3<>::exp(v6KFPose);
+//        predConvert->setPosSE3_globalToDrone(se3New);
 
-        TooN::Vector<6> CamPos = TooN::makeVector(predConvert->x, predConvert->y, predConvert->z, predConvert->roll, predConvert->pitch, predConvert->yaw);
-        CamPos = filter->backTransformPTAMObservation(CamPos);
+//        TooN::Vector<6> CamPos = TooN::makeVector(predConvert->x, predConvert->y, predConvert->z, predConvert->roll, predConvert->pitch, predConvert->yaw);
+//        CamPos = filter->backTransformPTAMObservation(CamPos);
 
-        predConvert->setPosRPY(CamPos[0], CamPos[1], CamPos[2], CamPos[3], CamPos[4], CamPos[5]);
+//        predConvert->setPosRPY(CamPos[0], CamPos[1], CamPos[2], CamPos[3], CamPos[4], CamPos[5]);
 
-        kf->se3CfromW = predConvert->droneToFrontNT * predConvert->droneToGlobal;
+//        kf->se3CfromW = predConvert->droneToFrontNT * predConvert->droneToGlobal;
 
- //       kf->se3CfromW = SE3<>::exp(v6KFPose);
+        kf->se3CfromW = SE3<>::exp(v6KFPose);
 
 		int nTmp = 0;
 		kfe->QueryIntAttribute("fixed", &nTmp);
@@ -644,6 +644,23 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 
 		string sTmp = hMP.ToElement()->Attribute( "position" );
 		sscanf( sTmp.c_str(), "%lf %lf %lf", &mp->v3WorldPos[0], &mp->v3WorldPos[1], &mp->v3WorldPos[2]);
+
+        //////////////////////////////////////
+//        TooN::Vector<3> PTAMScales = filter->getCurrentScales();
+//        cerr << "PTAM Scales in load: " << PTAMScales << endl;
+//        TooN::Vector<3> PTAMOffsets = filter->getCurrentOffsets().slice<0,3>();
+
+//        TooN::Vector<3> pos = mp->v3WorldPos;
+//        pos -= PTAMOffsets;
+
+//        pos[0] /= PTAMScales[0];
+//        pos[1] /= PTAMScales[1];
+//        pos[2] /= PTAMScales[2];
+
+//        mp->v3WorldPos[0] = pos[0];
+//        mp->v3WorldPos[1] = pos[1];
+//        mp->v3WorldPos[2] = pos[2];
+        //////////////////////////////////////
 
 		hMP.ToElement()->QueryIntAttribute( "outlierCount", &mp->nMEstimatorOutlierCount );
 		hMP.ToElement()->QueryIntAttribute( "inlierCount", &mp->nMEstimatorInlierCount );
@@ -1069,13 +1086,15 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 
             //HERE!!! SAVE
 
-            predConvert->setPosSE3_globalToDrone(predConvert->frontToDroneNT * kf->se3CfromW);
-            TooN::Vector<6> CamPos = TooN::makeVector(predConvert->x, predConvert->y, predConvert->z, predConvert->roll, predConvert->pitch, predConvert->yaw);
-            CamPos = filter->transformPTAMObservation(CamPos);
-            predConvert->setPosRPY(CamPos[0], CamPos[1], CamPos[2], CamPos[3], CamPos[4], CamPos[5]);
+//            predConvert->setPosSE3_globalToDrone(predConvert->frontToDroneNT * kf->se3CfromW);
+//            TooN::Vector<6> CamPos = TooN::makeVector(predConvert->x, predConvert->y, predConvert->z, predConvert->roll, predConvert->pitch, predConvert->yaw);
+//            CamPos = filter->transformPTAMObservation(CamPos);
+//            predConvert->setPosRPY(CamPos[0], CamPos[1], CamPos[2], CamPos[3], CamPos[4], CamPos[5]);
 
-            SE3<> se3New = predConvert->droneToGlobal;
-            os << se3New.ln();
+//            SE3<> se3New = predConvert->droneToGlobal;
+//            os << se3New.ln();
+
+            os << kf->se3CfromW.ln();
 
 			s = os.str();
 			PruneWhiteSpace( s );
@@ -1287,7 +1306,21 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 		string s;
 		ostringstream os;
 
-		os << mp->v3WorldPos;
+        //////////////////////////////////////
+//        TooN::Vector<3> PTAMScales = filter->getCurrentScales();
+//        TooN::Vector<3> PTAMOffsets = filter->getCurrentOffsets().slice<0,3>();
+
+//        TooN::Vector<3> pos = mp->v3WorldPos;
+//        pos[0] *= PTAMScales[0];
+//        pos[1] *= PTAMScales[1];
+//        pos[2] *= PTAMScales[2];
+//        pos += PTAMOffsets;
+
+//        os << pos;
+        //////////////////////////////////////
+
+        os << mp->v3WorldPos;
+
 		s = os.str();
 		PruneWhiteSpace( s );
 		mpe->SetAttribute("position", s );

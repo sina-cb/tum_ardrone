@@ -173,6 +173,11 @@ void tum_ardrone_gui::on_SaveBtn_clicked()
     rosThread->publishCommand("n save");
 }
 
+void tum_ardrone_gui::on_deleteBtn_clicked()
+{
+    rosThread->publishCommand("n delete");
+}
+
 void tum_ardrone_gui::on_loadBtn_clicked()
 {
     int map_id = ui.mapIDtxt->text().toInt();
@@ -449,3 +454,4 @@ ControlCommand tum_ardrone_gui::calcKBControl()
 
     return c;
 }
+

@@ -266,7 +266,6 @@ private:
 
 
 	// relation parameters (ptam to imu scale / offset)
-	double x_offset, y_offset, z_offset;
 	double xy_scale, z_scale;
 	double scale_from_z;
 	double scale_from_xy;
@@ -341,6 +340,8 @@ private:
 
 	EstimationNode* node;
 public:
+    double x_offset, y_offset, z_offset;
+
 	DroneKalmanFilter(EstimationNode* node);
 	~DroneKalmanFilter(void);
 	void release();

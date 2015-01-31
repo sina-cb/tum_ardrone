@@ -97,11 +97,11 @@ void PTAMWrapper::ResetInternal()
     //reset map.
     mpTracker->Reset();
 
-//    pthread_mutex_lock( &filter->filter_CS );
-//    filter->reset();
-//    pthread_mutex_unlock( &filter->filter_CS );
+    //    pthread_mutex_lock( &filter->filter_CS );
+    //    filter->reset();
+    //    pthread_mutex_unlock( &filter->filter_CS );
 
-  //  filter->clearPTAM();
+    //  filter->clearPTAM();
 
     //lock and delete all remaining maps
     //    while( mvpMaps.size() > 1 )
@@ -242,9 +242,6 @@ bool PTAMWrapper::SwitchMap( int nMapNum, bool bForce ){
         usleep(10);
     }
 
-    //update the map viewer object
-    //mapView->SwitchMap(mpMap, bForce);
-
     if( !mpTracker->SwitchMap( mpMap ) ) {
         return false;
     }
@@ -289,10 +286,15 @@ void PTAMWrapper::NewMap()
 bool PTAMWrapper::DeleteMap( int nMapNum ){
     ROS_ERROR("Delete Map!!!");
 
-    if( mvpMaps.size() <= 1 )
+    if( mvpMaps.size() < 1 )
     {
         ROS_INFO("Cannot delete the only map. Use Reset instead.");
         return false;
+    }
+
+    if ( mvpMaps.size() == 1 ){
+        NewMap();
+        //filter->clearPTAM();
     }
 
     //if the specified map is the current map, move threads to another map
@@ -313,8 +315,6 @@ bool PTAMWrapper::DeleteMap( int nMapNum ){
             return false;
         }
     }
-
-
 
     // find and delete the map
     for( size_t ii = 0; ii < mvpMaps.size(); ii++ )
@@ -476,7 +476,7 @@ void PTAMWrapper::HandleFrame()
     myGLWindow->SetupVideoOrtho();
     myGLWindow->SetupVideoRasterPosAndZoom();
 
-
+    mpMap->setCurrentScales(filter->getCurrentScales());
 
     // 1. transform with filter
     TooN::Vector<6> PTAMPoseGuess = filter->backTransformPTAMObservation(filterPosePrePTAM.slice<0,6>());
@@ -485,6 +485,7 @@ void PTAMWrapper::HandleFrame()
     // 3. multiply with rotation matrix
     TooN::SE3<> PTAMPoseGuessSE3 = predConvert->droneToFrontNT * predConvert->globaltoDrone;
 
+    std::cerr << "Offset X: " << filter->x_offset << std::endl;
 
     // set
     mpTracker->setPredictedCamFromW(PTAMPoseGuessSE3);
@@ -1250,6 +1251,14 @@ bool PTAMWrapper::handleCommand(std::string s)
         ROS_ERROR("Maps count: %d", mvpMaps.size());
     }
 
+    if(s.length() == 6 && s.substr(0,6) == "delete")
+    {
+        ROS_ERROR("Delete current map!");
+        int mapId = mpMap->MapID();
+        DeleteMap(mpMap->MapID());
+        ROS_ERROR("Map Deleted: %d", mapId);
+    }
+
     if(s.length() == 4 && s.substr(0,4) == "save")
     {
         ROS_ERROR("Saving!");
@@ -1284,10 +1293,24 @@ bool PTAMWrapper::handleCommand(std::string s)
 
         ROS_ERROR("Load globalToDrone Rotation: %f", predConvert->globaltoDrone.get_rotation());
 
+
+        if (mvpMaps.size() == 0){
+            mpMapSerializer->setFilter(filter);
+            mpMapSerializer->setPredictor(predConvert);
+
+            mpMapSerializer->LoadMap(mpMap, map_location);
+
+            PTAMInitializedClock = getMS();
+            node->publishCommand("u l PTAM initialized (took second KF)");
+            framesIncludedForScaleXYZ = -1;
+            imuOnlyPred->resetPos();
+        }
+
         mpMapSerializer->setFilter(filter);
         mpMapSerializer->setPredictor(predConvert);
 
         mpMapSerializer->LoadMap(mpMap, map_location);
+
 
         ROS_ERROR("Loaded!");
     }
