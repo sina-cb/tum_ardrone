@@ -656,7 +656,7 @@ void PTAMWrapper::HandleFrame()
             pthread_mutex_unlock(&logScalePairs_CS);
 
 
-            if(!allCorrupted)
+            if(!allCorrupted && !mgvnLockMap)
             {
                 // filtering: z more weight, but only if not corrupted.
                 double xyFactor = 0.05;
@@ -667,6 +667,7 @@ void PTAMWrapper::HandleFrame()
 
                 filter->updateScaleXYZ(diffPTAM, diffIMU, PTAMResult.slice<0,3>());
                 mpMapMaker->mpMap->currentScaleFactor = filter->getCurrentScales()[0];
+
             }
             framesIncludedForScaleXYZ = -1;	// causing reset afterwards
         }
