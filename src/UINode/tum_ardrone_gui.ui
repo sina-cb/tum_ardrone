@@ -186,19 +186,6 @@
      <string>FlatTrim</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="deleteBtn">
-    <property name="geometry">
-     <rect>
-      <x>210</x>
-      <y>400</y>
-      <width>61</width>
-      <height>27</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Delete</string>
-    </property>
-   </widget>
   </widget>
   <widget class="QGroupBox" name="groupBox_2">
    <property name="geometry">
@@ -583,6 +570,19 @@
     <string>MapID</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="deleteBtn">
+   <property name="geometry">
+    <rect>
+     <x>300</x>
+     <y>470</y>
+     <width>41</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Lock</string>
+   </property>
+  </widget>
   <zorder>nextBtn</zorder>
   <zorder>groupBox</zorder>
   <zorder>groupBox_2</zorder>
@@ -595,6 +595,7 @@
   <zorder>loadBtn</zorder>
   <zorder>prevBtn</zorder>
   <zorder>mapIDtxt</zorder>
+  <zorder>deleteBtn</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

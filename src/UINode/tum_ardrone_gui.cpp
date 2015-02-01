@@ -175,7 +175,7 @@ void tum_ardrone_gui::on_SaveBtn_clicked()
 
 void tum_ardrone_gui::on_deleteBtn_clicked()
 {
-    rosThread->publishCommand("n delete");
+    rosThread->publishCommand("n lock");
 }
 
 void tum_ardrone_gui::on_loadBtn_clicked()

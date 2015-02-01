@@ -485,8 +485,6 @@ void PTAMWrapper::HandleFrame()
     // 3. multiply with rotation matrix
     TooN::SE3<> PTAMPoseGuessSE3 = predConvert->droneToFrontNT * predConvert->globaltoDrone;
 
-    std::cerr << "Offset X: " << filter->x_offset << std::endl;
-
     // set
     mpTracker->setPredictedCamFromW(PTAMPoseGuessSE3);
     //mpTracker->setLastFrameLost((isGoodCount < -10), (videoFrameID%2 != 0));
@@ -1251,12 +1249,19 @@ bool PTAMWrapper::handleCommand(std::string s)
         ROS_ERROR("Maps count: %d", mvpMaps.size());
     }
 
-    if(s.length() == 6 && s.substr(0,6) == "delete")
+    if(s.length() == 4 && s.substr(0,4) == "lock")
     {
-        ROS_ERROR("Delete current map!");
-        int mapId = mpMap->MapID();
-        DeleteMap(mpMap->MapID());
-        ROS_ERROR("Map Deleted: %d", mapId);
+        ROS_ERROR("Changing Lock Map %d", mpMap->MapID());
+
+        if (mpMap->bEditLocked){
+            ROS_ERROR("Unlocked the map");
+            mpMap->bEditLocked = false;
+            mgvnLockMap = false;
+        }else{
+            ROS_ERROR("Locked the map");
+            mpMap->bEditLocked = true;
+            mgvnLockMap = true;
+        }
     }
 
     if(s.length() == 4 && s.substr(0,4) == "save")
@@ -1264,12 +1269,6 @@ bool PTAMWrapper::handleCommand(std::string s)
         ROS_ERROR("Saving!");
 
         std::string map_location = "";
-        //map_location = map_location + "map_" + boost::lexical_cast<std::string>(mpMap->MapID());
-
-        ROS_ERROR("Save globalToDrone Trans: %f | %f | %f", predConvert->globaltoDrone.get_translation()[0], predConvert->globaltoDrone.get_translation()[1]
-                , predConvert->globaltoDrone.get_translation()[2]);
-
-        ROS_ERROR("Save globalToDrone Rotation: %f", predConvert->globaltoDrone.get_rotation());
 
         mpMapSerializer->setFilter(filter);
         mpMapSerializer->setPredictor(predConvert);
@@ -1284,15 +1283,6 @@ bool PTAMWrapper::handleCommand(std::string s)
     {
         ROS_ERROR("Loading!");
         std::string map_location = s.substr(5, s.length());
-        //        map_location = map_location + "map_" + boost::lexical_cast<std::string>(0);
-
-
-        ROS_ERROR("Load globalToDrone Trans: %f | %f | %f", predConvert->globaltoDrone.get_translation()[0]
-                , predConvert->globaltoDrone.get_translation()[1]
-                , predConvert->globaltoDrone.get_translation()[2]);
-
-        ROS_ERROR("Load globalToDrone Rotation: %f", predConvert->globaltoDrone.get_rotation());
-
 
         if (mvpMaps.size() == 0){
             mpMapSerializer->setFilter(filter);
