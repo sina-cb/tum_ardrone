@@ -47,7 +47,7 @@ public:
 	Tracker(CVD::ImageRef irVideoSize, const ATANCamera &c, std::vector<Map*> &maps, Map *m, MapMaker &mm);
 
 	// TrackFrame is the main working part of the tracker: call this every frame.
-	void TrackFrame(CVD::Image<CVD::byte> &imFrame, bool bDraw);
+	void TrackFrame(CVD::Image<CVD::byte> &imFrame, bool bDraw, bool isFlying);
 
 	void TakeKF(bool force);	//TODO: Added from TUM_ARDRONE
 	void tryToRecover();		//TODO: Added from TUM_ARDRONE

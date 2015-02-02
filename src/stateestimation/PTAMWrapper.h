@@ -62,6 +62,7 @@ private:
     CVD::ImageRef defaultWindowSize;		// size the window gets opened with
     bool changeSizeNextRender;
 
+	bool is_flying;
 
     // the associated thread's run function.
     // calls HandleFrame() every time a new frame is available.

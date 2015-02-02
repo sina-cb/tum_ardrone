@@ -109,7 +109,7 @@ void Tracker::Reset()
 // It figures out what state the tracker is in, and calls appropriate internal tracking
 // functions. bDraw tells the tracker wether it should output any GL graphics
 // or not (it should not draw, for example, when AR stuff is being shown.)
-void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
+void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw, bool isFlying)
 {
     mbDraw = bDraw;
     mMessageForUser.str("");   // Wipe the user message clean
@@ -199,7 +199,8 @@ void Tracker::TrackFrame(Image<CVD::byte> &imFrame, bool bDraw)
         }
         else  // what if there is a map, but tracking has been lost?
         {
-            tryToRecover();
+	    if (isFlying)
+	            tryToRecover();
         }
     }
     else{ // If there is no map, try to make one.

@@ -76,6 +76,7 @@ PTAMWrapper::PTAMWrapper(DroneKalmanFilter* f, EstimationNode* nde)
 
     logfileScalePairs = 0;
 
+    is_flying = false;
     mgvnLockMap = false;
     forceload = false;
     GUI.RegisterCommand("SwitchMap", GUICommandCallBack, this);
@@ -492,7 +493,7 @@ void PTAMWrapper::HandleFrame()
 
     // track
     ros::Time startedPTAM = ros::Time::now();
-    mpTracker->TrackFrame(mimFrameBW_workingCopy, true);
+    mpTracker->TrackFrame(mimFrameBW_workingCopy, true, is_flying);
     TooN::SE3<> PTAMResultSE3 = mpTracker->GetCurrentPose();
 
     lastPTAMMessage = msg = mpTracker->GetMessageForUser();
@@ -526,7 +527,7 @@ void PTAMWrapper::HandleFrame()
         ROS_INFO("initial scale: %f\n", mpMapMaker->mpMap->initialScaleFactor*1.2);
         node->publishCommand("u l PTAM initialized (took second KF)");
         framesIncludedForScaleXYZ = -1;
-//        lockNextFrame = true;
+        lockNextFrame = true;
         imuOnlyPred->resetPos();
 
         forceload = false;
@@ -1068,6 +1069,7 @@ void PTAMWrapper::newNavdata(ardrone_autonomy::Navdata* nav)
         printf("PTAMSystem: ignoring navdata package with ID %i\n", lastNavinfoReceived.header.seq);
         return;
     }
+    is_flying = nav->state == 4 || nav->state == 3 || nav->state == 7;
 
     // correct yaw with filter-yaw (!):
     lastNavinfoReceived.rotZ = filter->getCurrentPose()[5];

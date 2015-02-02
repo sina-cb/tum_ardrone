@@ -77,7 +77,7 @@ bool Relocaliser::AttemptRecovery(Map & currentMap, KeyFrame &kCurrent)
     SE3<> se3KeyFramePos = mpBestMap->vpKeyFrames[mnBest]->se3CfromW;
     mse3Best = SmallBlurryImage::SE3fromSE2(mse2, mCamera) * se3KeyFramePos;
 
-    if(dScore < GV2.GetDouble("Reloc2.MaxScore", 70000, SILENT))
+    if(dScore < GV2.GetDouble("Reloc2.MaxScore", 9e6, SILENT))
     {
         //are we in the same map?
         if (mpBestMap == &currentMap) {
