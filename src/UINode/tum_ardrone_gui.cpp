@@ -188,14 +188,15 @@ void tum_ardrone_gui::on_loadBtn_clicked()
     std::string cmd = "n load " + os.str();
     rosThread->publishCommand(cmd);
 
+/*
     sleep(1);
     rosThread->publishCommand("f reset");
-    sleep(1);
+    sleep(3);
 
     std::ostringstream os2;
     os2 << "map" << std::setfill('0') << std::setw(6) << map_id;
     std::string cmd2 = "n load " + os2.str();
-    rosThread->publishCommand(cmd2);
+    rosThread->publishCommand(cmd2);*/
 }
 
 void tum_ardrone_gui::on_prevBtn_clicked()
