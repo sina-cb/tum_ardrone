@@ -254,18 +254,14 @@ MapSerializer::MapStatus MapSerializer::_LoadMap( std::string sDirName )
 
     ////////////  Load Map Scale  ////////////
     TiXmlHandle scaleNode = hRoot.FirstChild( "Scale" );
-    double x_scale = 1;
-    double y_scale = 1;
-    double z_scale = 1;
+    double scale = 1;
 
-    scaleNode.ToElement()->QueryDoubleAttribute("x_scale", &x_scale);
-    scaleNode.ToElement()->QueryDoubleAttribute("y_scale", &y_scale);
-    scaleNode.ToElement()->QueryDoubleAttribute("z_scale", &z_scale);
+    scaleNode.ToElement()->QueryDoubleAttribute("val", &scale);
 
-    mpMap->setCurrentScales(TooN::makeVector(x_scale, y_scale, z_scale));
-    filter->setCurrentScales(mpMap->getCurrentScales());
+    mpMap->initialScaleFactor = scale;
+//    mpMap->setCurrentScales(TooN::makeVector(x_scale, y_scale, z_scale));
+ //   filter->setCurrentScales(mpMap->getCurrentScales());  // KENNY TEST
 
-    cerr << "X Scale: " << x_scale << " Y Scale: " << y_scale << " Z Scale: " << z_scale << endl;
     ////////////  Map Scale Loaded////////////
 
     cerr << "Before Loading Key frames" << endl;
@@ -314,7 +310,7 @@ MapSerializer::MapStatus MapSerializer::_LoadMap( std::string sDirName )
 
 /**
  * Load a map specified in the sDirName.
- * @param pMap the map to load into 
+ * @param pMap the map to load into
  * @param sDirName the directory containing the map
  * @return success
  */
@@ -484,7 +480,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 				&v6KFPose[3], &v6KFPose[4], &v6KFPose[5]);
 
         //HERE!!! LOAD
-        TooN::SE3<> se3New = SE3<>::exp(v6KFPose);
+/*        TooN::SE3<> se3New = SE3<>::exp(v6KFPose);
         predConvert->setPosSE3_globalToDrone(se3New);
 
         TooN::Vector<6> CamPos = TooN::makeVector(predConvert->x, predConvert->y, predConvert->z, predConvert->roll, predConvert->pitch, predConvert->yaw);
@@ -493,8 +489,8 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
         predConvert->setPosRPY(CamPos[0], CamPos[1], CamPos[2], CamPos[3], CamPos[4], CamPos[5]);
 
         kf->se3CfromW = predConvert->droneToFrontNT * predConvert->droneToGlobal;
-
-//        kf->se3CfromW = SE3<>::exp(v6KFPose);
+*/
+        kf->se3CfromW = SE3<>::exp(v6KFPose);
 
 		int nTmp = 0;
 		kfe->QueryIntAttribute("fixed", &nTmp);
@@ -646,7 +642,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 		sscanf( sTmp.c_str(), "%lf %lf %lf", &mp->v3WorldPos[0], &mp->v3WorldPos[1], &mp->v3WorldPos[2]);
 
         //////////////////////////////////////
-        TooN::Vector<3> PTAMScales = filter->getCurrentScales();
+/*        TooN::Vector<3> PTAMScales = filter->getCurrentScales();
         cerr << "PTAM Scales in load: " << PTAMScales << endl;
         TooN::Vector<3> PTAMOffsets = filter->getCurrentOffsets().slice<0,3>();
 
@@ -659,7 +655,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 
         mp->v3WorldPos[0] = pos[0];
         mp->v3WorldPos[1] = pos[1];
-        mp->v3WorldPos[2] = pos[2];
+        mp->v3WorldPos[2] = pos[2];*/
         //////////////////////////////////////
 
 		hMP.ToElement()->QueryIntAttribute( "outlierCount", &mp->nMEstimatorOutlierCount );
@@ -906,9 +902,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
         TiXmlElement * scaleNode = new TiXmlElement("Scale");
         rootNode->LinkEndChild(scaleNode);
 
-        scaleNode->SetDoubleAttribute("x_scale", mpMap->getCurrentScales()[0]);
-        scaleNode->SetDoubleAttribute("y_scale", mpMap->getCurrentScales()[1]);
-        scaleNode->SetDoubleAttribute("z_scale", mpMap->getCurrentScales()[2]);
+        scaleNode->SetDoubleAttribute("val", mpMap->initialScaleFactor);
 
 		////////////  save the keyframes and map points  ////////////
         bool bOK = false;
@@ -1086,14 +1080,14 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 
             //HERE!!! SAVE
 
-            predConvert->setPosSE3_globalToDrone(predConvert->frontToDroneNT * kf->se3CfromW);
+/*            predConvert->setPosSE3_globalToDrone(predConvert->frontToDroneNT * kf->se3CfromW);
             TooN::Vector<6> CamPos = TooN::makeVector(predConvert->x, predConvert->y, predConvert->z, predConvert->roll, predConvert->pitch, predConvert->yaw);
             CamPos = filter->transformPTAMObservation(CamPos);
             predConvert->setPosRPY(CamPos[0], CamPos[1], CamPos[2], CamPos[3], CamPos[4], CamPos[5]);
 
             SE3<> se3New = predConvert->droneToGlobal;
             os << se3New.ln();
-
+*/
             os << kf->se3CfromW.ln();
 
 			s = os.str();
@@ -1307,7 +1301,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 		ostringstream os;
 
         //////////////////////////////////////
-        TooN::Vector<3> PTAMScales = filter->getCurrentScales();
+ /*       TooN::Vector<3> PTAMScales = filter->getCurrentScales();
         TooN::Vector<3> PTAMOffsets = filter->getCurrentOffsets().slice<0,3>();
 
         TooN::Vector<3> pos = mp->v3WorldPos;
@@ -1319,7 +1313,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
         std::cerr << "Offsets: " << PTAMOffsets << std::endl;
 
         os << pos;
-        //////////////////////////////////////
+   */     //////////////////////////////////////
 
         os << mp->v3WorldPos;
 
@@ -1627,7 +1621,7 @@ MapSerializer::MapStatus MapSerializer::LoadMap( Map * pMap, std::string sDirNam
 					if( _mkdir( sBaseName.c_str()) != 0 ) {
 #else
 						if( mkdir( sBaseName.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH ) != 0 ) {
-#endif 
+#endif
 							cerr << "Failed to make dir " << sBaseName << endl;
 							return;
 						}

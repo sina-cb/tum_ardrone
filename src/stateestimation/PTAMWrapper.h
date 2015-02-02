@@ -111,7 +111,7 @@ private:
 
 
     bool forceKF;
-
+    bool forceload;
     bool flushMapKeypoints;
 
     int lastAnimSentClock;

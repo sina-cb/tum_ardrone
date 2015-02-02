@@ -77,7 +77,7 @@ PTAMWrapper::PTAMWrapper(DroneKalmanFilter* f, EstimationNode* nde)
     logfileScalePairs = 0;
 
     mgvnLockMap = false;
-
+    forceload = false;
     GUI.RegisterCommand("SwitchMap", GUICommandCallBack, this);
 }
 
@@ -517,7 +517,7 @@ void PTAMWrapper::HandleFrame()
         ROS_INFO("initializing PTAM failed, resetting!");
         resetPTAMRequested = true;
     }
-    if(mpTracker->lastStepResult == mpTracker->I_SECOND)
+    if(mpTracker->lastStepResult == mpTracker->I_SECOND || forceload)
     {
         PTAMInitializedClock = getMS();
         filter->setCurrentScales(TooN::makeVector(mpMapMaker->mpMap->initialScaleFactor * 1.2, mpMapMaker->mpMap->initialScaleFactor * 1.2, mpMapMaker->mpMap->initialScaleFactor * 1.2));
@@ -526,8 +526,10 @@ void PTAMWrapper::HandleFrame()
         ROS_INFO("initial scale: %f\n", mpMapMaker->mpMap->initialScaleFactor*1.2);
         node->publishCommand("u l PTAM initialized (took second KF)");
         framesIncludedForScaleXYZ = -1;
-        lockNextFrame = true;
+//        lockNextFrame = true;
         imuOnlyPred->resetPos();
+
+        forceload = false;
     }
 
     if(mpTracker->lastStepResult == mpTracker->I_FIRST)
@@ -1274,7 +1276,7 @@ bool PTAMWrapper::handleCommand(std::string s)
         mpMapSerializer->setFilter(filter);
         mpMapSerializer->setPredictor(predConvert);
 
-        mpMap->setCurrentScales(filter->getCurrentScales());
+ //       mpMap->setCurrentScales(filter->getCurrentScales());
         mpMapSerializer->SaveMap(mpMap, map_location);
 
         ROS_ERROR("Saved!");
@@ -1285,22 +1287,15 @@ bool PTAMWrapper::handleCommand(std::string s)
         ROS_ERROR("Loading!");
         std::string map_location = s.substr(5, s.length());
 
-        if (mvpMaps.size() == 0){
-            mpMapSerializer->setFilter(filter);
-            mpMapSerializer->setPredictor(predConvert);
-
-            mpMapSerializer->LoadMap(mpMap, map_location);
-
-            PTAMInitializedClock = getMS();
-            node->publishCommand("u l PTAM initialized (took second KF)");
-            framesIncludedForScaleXYZ = -1;
-            imuOnlyPred->resetPos();
-        }
-
         mpMapSerializer->setFilter(filter);
         mpMapSerializer->setPredictor(predConvert);
 
         mpMapSerializer->LoadMap(mpMap, map_location);
+
+        forceload = true;
+        mpTracker->lastStepResult = mpTracker->I_SECOND;
+        mpTracker->mnInitialStage = mpTracker->TRAIL_TRACKING_COMPLETE;
+
 
 
         ROS_ERROR("Loaded!");

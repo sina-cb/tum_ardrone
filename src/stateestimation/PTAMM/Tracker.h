@@ -88,6 +88,10 @@ public:
 	 * TODO: Added from TUM_ARDRONE
 	 */
 
+	enum {TRAIL_TRACKING_NOT_STARTED,
+		TRAIL_TRACKING_STARTED,
+		TRAIL_TRACKING_COMPLETE} mnInitialStage;  // How far are we towards making the initial map?
+
 protected:
 	KeyFrame mCurrentKF;            // The current working frame as a keyframe struct
 
@@ -105,9 +109,6 @@ protected:
 
 	// The following members are used for initial map tracking (to get the first stereo pair and correspondences):
 	void TrackForInitialMap();      // This is called by TrackFrame if there is not a map yet.
-	enum {TRAIL_TRACKING_NOT_STARTED,
-		TRAIL_TRACKING_STARTED,
-		TRAIL_TRACKING_COMPLETE} mnInitialStage;  // How far are we towards making the initial map?
 		void TrailTracking_Start();     // First frame of initial trail tracking. Called by TrackForInitialMap.
 		int  TrailTracking_Advance();   // Steady-state of initial trail tracking. Called by TrackForInitialMap.
 		std::list<Trail> mlTrails;      // Used by trail tracking
