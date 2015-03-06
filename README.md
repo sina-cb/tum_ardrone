@@ -22,7 +22,7 @@ The code works for both the AR.Drone 1.0 and 2.0, the default-parameters however
 
 ``` bash
 cd catkin_ws/src
-git clone https://github.com/sina-cb/tum_ardrone.git -b hydro-devel
+git clone https://github.com/sina-cb/tum_ardrone.git -b tum_with_ptamm
 cd ..
 rosdep install tum_ardrone
 catkin_make
