@@ -161,6 +161,11 @@ void RosThread::comCb(const std_msgs::StringConstPtr str)
 		else if(str->data.substr(0,4) == "u s ")
 			gui->setStateestimationInfo(str->data.substr(4,str->data.length()-4));
 	}
+
+    if(str->data.substr(0,7) == "c start"){
+        ROS_INFO("Auto Pilot Started. All commands cleared!");
+        publishCommand("c clearCommands");
+    }
 }
 
 void RosThread::sendResetMsg() {

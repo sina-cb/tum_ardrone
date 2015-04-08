@@ -205,12 +205,12 @@ void tum_ardrone_gui::ControlSourceChanged()
 		s = CONTROL_NONE;
 	if(ui.radioButtonControlJoy->isChecked())
 		s = CONTROL_JOY;
-	if(ui.radioButtonControlAuto->isChecked())
+    if(ui.radioButtonControlAuto->isChecked())
 		s = CONTROL_AUTO;
 
 	if(s != CONTROL_AUTO)
 		rosThread->publishCommand("c stop");
-	else
+    else
 		rosThread->publishCommand("c start");
 
 	currentControlSource = s;

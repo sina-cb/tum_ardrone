@@ -110,8 +110,6 @@ void PTAMWrapper::ResetInternal()
 	fleH.close();
 	std::cout<< "Set Camera Paramerer to: " << camPar[0] << " " << camPar[1] << " " << camPar[2] << " " << camPar[3] << " " << camPar[4] << std::endl;
 
-
-
 	mpMap = new Map;
 	mpCamera = new ATANCamera(camPar);
 	mpMapMaker = new MapMaker(*mpMap, *mpCamera);
