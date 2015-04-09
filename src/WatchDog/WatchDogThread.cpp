@@ -29,17 +29,11 @@
 
 WatchDogThread::WatchDogThread()
 {
+    watchdog_pub = nh_.advertise<std_msgs::Empty>(nh_.resolveName("/watchdog"), 1);
+    watchdog_sub = nh_.subscribe(nh_.resolveName("/watchdog"), 10, &WatchDogThread::sendLand, this);
 
-    ros::master::V_TopicInfo ti;
-    if(ros::master::getTopics(ti)) {
-        for(ros::master::V_TopicInfo::iterator it = ti.begin(); it != ti.end(); it++) {
-//            if(it->datatype == _topicType)
-                ROS_ERROR(it->name.c_str());
-        }
-    }
-
-    navdata_sub = nh_.subscribe(nh_.resolveName("ardrone/navdata"), 1000, &WatchDogThread::navdata_Cb, this);
-    vel_sub = nh_.subscribe(nh_.resolveName("cmd_vel"), 100, &WatchDogThread::velCb, this);
+    navdata_sub = nh_.subscribe(nh_.resolveName("ardrone/navdata"), 1, &WatchDogThread::navdata_Cb, this);
+    vel_sub = nh_.subscribe(nh_.resolveName("cmd_vel"), 1, &WatchDogThread::velCb, this);
     received = false;
 
     wait_time = 1.0;
@@ -50,13 +44,14 @@ WatchDogThread::~WatchDogThread()
 
 }
 
-void WatchDogThread::sendLand(){
-    ROS_ERROR("Send Land");
+void WatchDogThread::sendLand(const std_msgs::Empty msg){
+    ROS_ERROR_ONCE("Send Land");
 
     ros::Publisher land_pub = nh_.advertise<std_msgs::Empty>(nh_.resolveName("ardrone/land"), 1);
 
     pthread_mutex_lock(&send_CS);
     land_pub.publish(std_msgs::Empty());
+    watchdog_pub.publish(std_msgs::Empty());
     pthread_mutex_unlock(&send_CS);
 }
 
@@ -70,8 +65,9 @@ void WatchDogThread::start(){
 
         if (!now.isZero() && !last.isZero()){
             if (now - last > ros::Duration(wait_time) && received){
-                if (drone_state == 3 || drone_state == 4 || drone_state == 6 || drone_state == 7){
-                    sendLand();
+                if ((drone_state == 3 || drone_state == 4 || drone_state == 6 || drone_state == 7) &&
+                        drone_state != 2){
+                    sendLand(std_msgs::Empty());
                 }
 
                 if (drone_state == 2){

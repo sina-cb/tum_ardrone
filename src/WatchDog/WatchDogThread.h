@@ -42,12 +42,15 @@ public:
 
     void start();
 
-    void sendLand();
+    void sendLand(const std_msgs::Empty msg);
 
 private:
     ros::NodeHandle nh_;
     ros::Subscriber vel_sub;
     ros::Subscriber navdata_sub;
+
+    ros::Subscriber watchdog_sub;
+    ros::Publisher watchdog_pub;
 
     ros::Time now;
     ros::Time last;
