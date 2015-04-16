@@ -51,6 +51,7 @@ private:
 
     ros::Subscriber watchdog_sub;
     ros::Publisher watchdog_pub;
+    ros::Publisher land_pub;
 
     ros::Time now;
     ros::Time last;
@@ -58,6 +59,7 @@ private:
     int drone_state;
     bool received;
     double wait_time;
+    int stop_sending;
 
     pthread_mutex_t send_CS;
 };

@@ -31,12 +31,14 @@ WatchDogThread::WatchDogThread()
 {
     watchdog_pub = nh_.advertise<std_msgs::Empty>(nh_.resolveName("/watchdog"), 1);
     watchdog_sub = nh_.subscribe(nh_.resolveName("/watchdog"), 10, &WatchDogThread::sendLand, this);
+    land_pub = nh_.advertise<std_msgs::Empty>(nh_.resolveName("ardrone/land"), 1);
 
     navdata_sub = nh_.subscribe(nh_.resolveName("ardrone/navdata"), 1, &WatchDogThread::navdata_Cb, this);
     vel_sub = nh_.subscribe(nh_.resolveName("cmd_vel"), 1, &WatchDogThread::velCb, this);
     received = false;
 
     wait_time = 1.0;
+    stop_sending = 0;
 }
 
 WatchDogThread::~WatchDogThread()
@@ -45,14 +47,14 @@ WatchDogThread::~WatchDogThread()
 }
 
 void WatchDogThread::sendLand(const std_msgs::Empty msg){
-    ROS_ERROR_ONCE("Send Land");
-
-    ros::Publisher land_pub = nh_.advertise<std_msgs::Empty>(nh_.resolveName("ardrone/land"), 1);
-
-    pthread_mutex_lock(&send_CS);
-    land_pub.publish(std_msgs::Empty());
-    watchdog_pub.publish(std_msgs::Empty());
-    pthread_mutex_unlock(&send_CS);
+    if (stop_sending < 3){
+        ROS_ERROR_ONCE("Send Land");
+        {
+            land_pub.publish(std_msgs::Empty());
+            watchdog_pub.publish(std_msgs::Empty());
+            stop_sending++;
+        }
+    }
 }
 
 void WatchDogThread::start(){
@@ -67,6 +69,14 @@ void WatchDogThread::start(){
             if (now - last > ros::Duration(wait_time) && received){
                 if ((drone_state == 3 || drone_state == 4 || drone_state == 6 || drone_state == 7) &&
                         drone_state != 2){
+                    // Clear commands and then send a land command
+                    {
+                        ros::Publisher tum_ardrone_pub = nh_.advertise<std_msgs::String>(nh_.resolveName("tum_ardrone/com"),50);
+                        std_msgs::String s;
+                        s.data = "c clearCommands";
+                        tum_ardrone_pub.publish(s);
+                    }
+
                     sendLand(std_msgs::Empty());
                 }
 
